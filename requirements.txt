@@ -18,3 +18,5 @@ django-sendgrid-v5
 python-dotenv
 django-environ
 mysqlclient
+weasyprint
+PyPDF2

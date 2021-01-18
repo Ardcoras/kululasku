@@ -50,3 +50,33 @@ Yhrek.fi
     send_mail(ugettext('New expense CC\'d to you'),
       body % (instance.organisation.name, instance.name, instance.description, instance.memo, rows, str(locale.currency(instance.amount(), False))),
       'info@yhrek.fi', [instance.cc_email], fail_silently=False)
+
+import io
+from django.http import HttpResponse
+import PyPDF2
+from weasyprint import HTML
+from django.template.loader import render_to_string
+from PIL import Image
+
+def render_to_pdf(template_src, context_dict, additional=[]):
+  html_string = render_to_string(template_src, context_dict)
+
+  html = HTML(string=html_string)
+  form = io.BytesIO(html.write_pdf())
+
+  pdf = PyPDF2.PdfFileMerger()
+  pdf.append(form)
+
+  for file in additional:
+    if file.name:
+      filename = file.url
+      if '.jpg' in file.name.lower() or '.png' in file.name.lower():
+        im = Image.open(filename)
+        filename = filename.replace('.jpg', '.pdf')
+        im.save(filename, "PDF", resolution=200.0)
+      pdf.append(open(filename, 'rb'))
+
+  output = io.BytesIO()
+  pdf.write(output)
+
+  return HttpResponse(output.getvalue(), content_type='application/pdf')

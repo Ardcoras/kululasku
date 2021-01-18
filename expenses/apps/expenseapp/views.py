@@ -4,8 +4,8 @@ from functools import partial
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from .forms import ExpenseForm, PersonForm, OrganisationForm
-from .models import Expense, ExpenseLine, ExpenseType, Organisation, Person
-from django.contrib.auth.decorators import login_required
+from .models import Expense, ExpenseLine, ExpenseType, Organisation, Person, WorkflowStep, ExpenseEvent, TYPE_CHOICES
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext as _
 from django.db.models import Q
@@ -19,7 +19,7 @@ from os.path import basename
 from django.utils.encoding import smart_text
 from expenseapp.helpers import cc_expense
 from datetime import datetime
-from .helpers import decimal_without_separator,decimal_in_r82
+from .helpers import decimal_without_separator, decimal_in_r82, render_to_pdf
 from decimal import Decimal
 from django.utils import translation
 from django.core.exceptions import ValidationError
@@ -105,7 +105,7 @@ def expense(request, organisation_id):
       (request.FILES or None),
       prefix='expenseform',
       initial=initial)
-  
+
   preview_mode = request.POST.get('preview', "0")
   if preview_mode == "1":
     if expense_form.is_valid():
@@ -148,8 +148,7 @@ def expense(request, organisation_id):
             tmp['receipt'] = {'label': _('Receipt'), 'url': None, 'filename': line_receipt.name}
         except Exception as e:
           messages.error(request, _('Please verify the given file.'))
-          
-        
+
         if(line.expensetype.requires_endtime):
           try:
             if(ended_at_time_input == ''):
@@ -163,7 +162,7 @@ def expense(request, organisation_id):
             messages.error(request, _('Please verify ending dates are correct.'))
         else:
           ended_at = None
-          
+
         if(line.expensetype.requires_start_time):
           try:
             if(begin_at_date_input == ''):
@@ -179,9 +178,7 @@ def expense(request, organisation_id):
           begin_at_time_input = "00.00"
           begin_at_str = '%s %s' % (begin_at_date_input, begin_at_time_input)
           begin_at = datetime.strptime(begin_at_str, "%d.%m.%Y %H.%M")
-        
-          
-        
+
         expense_form.cleaned_data['expenseform_EXPENSELINES-0-begin_at'] = begin_at
 
         tmp['id']           = None
@@ -192,9 +189,7 @@ def expense(request, organisation_id):
         tmp['expensetype']  = {'label': _('Expense type'),  'value': line.expensetype}
         tmp['sum']          = {'label': _('Sum'),           'value': line.sum(),}
         total_sum += line.sum()
-      
-        
-        
+
         lines.append(tmp)
 
       fields['total'] = {'label': _('Total'),           'value': total_sum}
@@ -242,6 +237,7 @@ def showexpense(request, expense_id):
   fields['iban'] = {'label': _('Bank account no'), 'value': expense.iban,}
   fields['swift_bic'] = {'label': _('BIC no'), 'value': expense.swift_bic,}
   fields['personno'] = {'label': _('Person number'), 'value': expense.personno,}
+  fields['workflow'] = {'label': _('Workflow'), 'value': expense.workflow.name,}
   fields['description'] = {'label': _('Description'), 'value': expense.description,}
   fields['memo'] = {'label': _('Info'), 'value': expense.memo,}
   fields['date'] = {'label': _('Sent'), 'value': expense.created_at,}
@@ -259,22 +255,23 @@ def showexpense(request, expense_id):
     tmp['basis'] = {'label': _('Amount'), 'value': line.basis,}
     tmp['expensetype'] = {'label': _('Expense type'), 'value': line.expensetype,}
     tmp['sum'] = {'label': _('Sum'), 'value': line.sum(),}
-  
+
     if line.receipt:
       tmp['receipt'] = {'label': _('Receipt'), 'url': line.receipt, 'filename': line.receipt.name.split('/')[-1]}
-  
+
     lines.append(tmp)
 
   return render(request, 'showexpense.html', {
     'expense': expense,
     'fields': fields,
     'lines': lines,
+    'expenseevents': ExpenseEvent.objects.filter(expense=expense),
   })
 
 @login_required()
 def xmlexpense(request, expense_id):
   expense = get_object_or_404(Expense, pk=expense_id)
-  
+
   if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense')):
     return redirect('/accounts/login/?next=%s' % request.path)
 
@@ -283,7 +280,7 @@ def xmlexpense(request, expense_id):
 @login_required()
 def katreexpense(request, expense_id):
   expense = get_object_or_404(Expense, pk=expense_id)
-  
+
   if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense')):
     return redirect('/accounts/login/?next=%s' % request.path)
 
@@ -291,7 +288,6 @@ def katreexpense(request, expense_id):
 
 @login_required()
 def personinfo(request):
-    
   person, created = Person.objects.get_or_create(user=request.user)
   initial = {
     'firstname': request.user.first_name,
@@ -324,6 +320,85 @@ def personinfo(request):
     'form': form,
     'orgs': orgs,
   })
+
+@permission_required('expenseapp.change_expense')
+def expense_list(request):
+  expenses = Expense.objects.all()
+
+  return render(request, 'expense_list.html', {
+    'expenses': expenses,
+  })
+
+@login_required
+def expense_addstep(request, expense_id):
+  expense = get_object_or_404(Expense, id=expense_id)
+  if not (request.user == expense.user_id or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
+    return redirect('/accounts/login/?next=%s' % request.path)
+
+  wfsteps = WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)
+
+  for choice in TYPE_CHOICES:
+    if request.GET['action'] == choice[0]:
+      if not request.user.has_perm('expenseapp.change_expense'):
+        perm_pass = False
+        for step in wfsteps:
+          if step.type == choice[0]:
+            perm_pass = True
+            break
+        if not perm_pass:
+          messages.error(request, _('Expense event was not added. Perhaps you weren\'t within your limits?'))
+          return redirect('/')
+      eevent = ExpenseEvent(expense=expense,
+        type=choice[0],
+        notes='',
+        user=request.user)
+      eevent.save()
+      # TODO: Notify next in line
+      messages.success(request, _('Expense event was added.'))
+      return HttpResponseRedirect(reverse('expense_view', kwargs={'expense_id': expense.id}))
+
+  messages.error(request, _('Expense event was not added. Perhaps you weren\'t within your limits?'))
+  return redirect('/')
+
+@login_required
+def expense_actable_list(request):
+  workflowsteps = WorkflowStep.objects.filter(users=request.user)
+
+  a_expenses = deque()
+
+  for wfstep in workflowsteps:
+    expenses = Expense.objects.filter(workflow=wfstep.workflow)
+    for expense in expenses:
+      eevent = ExpenseEvent.objects.filter(expense=expense, type=wfstep.type)
+      if not eevent:
+        a_expenses.append(expense)
+
+  return render(request, 'expense_list.html', {
+    'expenses': a_expenses,
+  })
+
+@login_required
+def expense_view_pdf(request, expense_id):
+  expense = get_object_or_404(Expense, id=expense_id)
+  if not (request.user == expense.user_id or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
+    return redirect('/accounts/login/?next=%s' % request.path)
+
+  lines = ExpenseLine.objects.filter(expense=expense)
+  events = ExpenseEvent.objects.filter(expense=expense)
+
+  context_data = {
+    'expense': expense,
+    'expenselines': lines,
+    'expenseevents': events,
+  }
+
+  receipts = []
+
+  for line in lines:
+    receipts.append(line.receipt)
+
+  return render_to_pdf('expense_view_pdf.html',
+    context_data, receipts)
 
 def organisationedit(request, organisation_id):
   if not request.user.has_perm('expenseapp.change_organisation_' + str(organisation_id)):

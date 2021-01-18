@@ -16,6 +16,7 @@ from django.contrib.contenttypes.models import ContentType
 from localflavor.generic.models import IBANField, BICField
 from django.template import defaultfilters
 from django.utils import timezone
+from datetime import date
 from django.db.models import Max
 
 from .finvoice import createFinvoice
@@ -331,6 +332,65 @@ class Expense(models.Model):
     expenselines = ExpenseLine.objects.filter(expense=expense)
 
     return createKatreReport(expense, expenselines)
+
+  def amount(self):
+    sum = 0
+    lines = ExpenseLine.objects.filter(expense=self)
+    for line in lines:
+      sum+= line.sum()
+    return sum
+
+  def c_approved(self):
+    e = ExpenseEvent.objects.filter(expense=self, type='C')
+    if e:
+      return e[0].date
+
+  def admin_approved(self):
+    e = ExpenseEvent.objects.filter(expense=self, type='A')
+    if e:
+      return e[0].date
+
+  def paid(self):
+    e = ExpenseEvent.objects.filter(expense=self, type='P')
+    if e:
+      return e[0].date
+
+  def reference_no(self):
+    kertoimet = (7, 3, 1)
+    viitenumero_raaka = str(self.num).replace(' ', '')
+    nrot_kaanteinen = map(int, viitenumero_raaka[::-1])
+    tulosumma = sum(kertoimet[i % 3] * x for i, x in enumerate(nrot_kaanteinen))
+    return str(viitenumero_raaka) + str((10 - (tulosumma % 10)) % 10)
+
+  def rf_reference_no(self):
+    reference_no = self.reference_no()
+    check = str(reference_no) + '271500'
+    check = int(check)
+    remainder = check % 97
+    checksum = 98 - remainder
+    checksum = str(checksum).zfill(2)
+    return 'RF' + checksum + str(reference_no)
+
+  def barcode(self):
+    import math
+    amount = self.amount()
+    euros = int(math.floor(amount))
+    cents = int((amount - euros) * 100)
+    reference = self.rf_reference_no()
+    reference = reference.replace('RF', '')
+    ref_added = 23 - len(reference)
+    if ref_added > 0:
+      reference = reference[:2] + '0'.zfill(ref_added) + reference[2:]
+    code = '5' + str(int("".join(self.iban[2:].split()))).zfill(16) + str(euros).zfill(6) + str(cents).zfill(2) + reference + date.today().strftime('%y%m%d')
+    sum = 0
+    for i in range(27):
+      if i == 0:
+        i = 1
+      sum = sum + int(code[i])*i
+    checksum = sum % 103
+
+    code = code + str(checksum)
+    return code
 
 def create_expense(sender, instance, created, **kwargs):
   if not instance.num or instance.num == '':

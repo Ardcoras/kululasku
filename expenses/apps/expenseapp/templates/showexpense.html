@@ -93,9 +93,50 @@
     </dl>
   </li> -->
   
+<div class="pure-g">
+  <div class="pure-u-1 blue-bottom">
+    <h2>{% trans 'Käsittelytiedot' %}</h2>
+
+  <table>
+  <thead><tr>
+    <th>Tyyppi</th>
+    <th>Päiväys</th>
+    <th>Lisätieto</th>
+    <th>Merkinnän tekijä</th>
+  </tr></thead>
+  <tbody>
+  {% for expenseevent in expenseevents %}
+  <tr>
+    <td>{{ expenseevent.typename }}</td>
+    <td>{{ expenseevent.date }}</td>
+    <td>{{ expenseevent.notes }}</td>
+    <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+
+<p>Voit maksaa kululaskun virtuaaliviivakoodilla {{ expense.barcode }}.</p>
 </div>
 <!-- </ul> -->
 
 {% block content_footer %}{% endblock %}
 
 {% endblock %}
+{% block localnav %}
+  <div class="btn-group">
+    <a href="{% url 'expense_view_pdf' expense.id %}" class="btn">PDF</a>
+    <div class="btn-group">
+      <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">Action
+        <span class="caret"></span>
+      </a>
+      <ul class="dropdown-menu">
+        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=R">Vastaanotettu</a></li>
+        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=C">Asiahyväksytty</a></li>
+        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=A">Hallinnollisesti hyväksytty</a></li>
+        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=P">Maksettu</a></li>
+      </ul>
+    </div>
+  </div>
+{% endblock %}
+

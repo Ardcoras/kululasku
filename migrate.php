@@ -80,13 +80,13 @@ try {
     $created_at = 0;
     $updated_at = 0;
     $expensetype = $expensetypes[$row['type_id']];
+    $orphan_receipt = NULL;
     if (isset($orphan_receipts[$row['expense_id']]) && empty($row['receipt'])) {
       $orphan_receipt = $orphan_receipts[$row['expense_id']];
       unset($orphan_receipts[$row['expense_id']]);
     }
     $expensetype_id = $expensetype_mapping[$expense_org_mapping[$row['expense_id']]][$row['type_id']];
-    $stmt->execute([$row['id'], $row['description'], '1900-01-01', $row['basis'], isset($orphan_receipt) ? $orphan_receipt : $row['receipt'], $expensetype['name'], $expensetype['type'], $expensetype['multiplier'], $row['expense_id'], $expensetype_id]);
-    $orphan_receipts[$row['id']] = $row['receipt'];
+    $stmt->execute([$row['id'], $row['description'], '1900-01-01', $row['basis'], !empty($orphan_receipt) ? $orphan_receipt : $row['receipt'], $expensetype['name'], $expensetype['type'], $expensetype['multiplier'], $row['expense_id'], $expensetype_id]);
   }
 
   var_dump($orphan_receipts);
