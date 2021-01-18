@@ -39,7 +39,8 @@
                 <li ><a href="{% url 'expense_own' %}">{% trans "My expenses" %}</a></li>
                 <li ><a href="{% url 'personinfo' %}">{% trans "User information" %}</a></li>
                 {% if user.is_staff %}
-                <li ><a href="{% url 'expense_list' %}">{% trans "All expenses" %}</a></li>
+                <li ><a href="{% url 'expense_actable_list' %}">{% trans "Actable" %}</a></li>
+                <li ><a href="{% url 'expense_list' %}">{% trans "All" %}</a></li>
                 <li ><a href="{% url 'admin:index' %}">{% trans 'Admin' %}</a></li>
                 {% endif %}
             {% endif %}
