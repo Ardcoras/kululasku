@@ -1,0 +1,39 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html class="no-js" lang="fi">
+<head>
+{% load staticfiles %}
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{% block title %}Yhrek{% endblock %}</title>
+
+{% block extrahead %}
+{% endblock %}
+
+<style type="text/css">
+  * { font-family: sans-serif; }
+  label, h2, h3, h4, h5, h6, h7 {
+    text-decoration: underline;
+  }
+  h1 {
+    font-weight: bold;
+    font-size: 150%;
+  }
+  label { font-weight: bold; margin-top: 2em; }
+  table {  border-collapse: collapse; width: 100%; }
+  table.layout td, table.layout th { border: none; }
+  td, th { border: 1px solid black; padding: 0.5em; }
+  p { min-height: 1em; border-left: 1px solid black; padding: 0.5em; }
+  tr.total td {
+    font-weight: bold;
+  }
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+{% block content %}
+{% include "expense_view_expense.html" %}
+{% endblock %}
+</div>
+</body>
+</html>

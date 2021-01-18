@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+<h1>{% trans "Expenses" %}</h1>
+<table>
+ <thead>
+  <tr>
+    <th>Organisaatio</th>
+    <th>Tositenumero</th>
+    <th>Nimi</th>
+    <th>Kuvaus</th>
+    <th>Asiahyväksytty</th>
+    <th>Hallinn. hyväksytty</th>
+    <th>Maksettu</th>
+  </tr>
+ </thead>
+{% for expense in expenses %}
+  <tr>
+    <td>{{ expense.organisation }}</td>
+    <td>{{ expense.num }}</td>
+    <td>{{ expense.name }}</td>
+    <td><a href="{% url 'expense_view' expense.id %}">{{ expense.description }}</a></li>
+    <td>{{ expense.c_approved }}</td>
+    <td>{{ expense.admin_approved }}</td>
+    <td>{{ expense.paid }}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}

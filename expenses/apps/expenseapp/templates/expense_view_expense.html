@@ -1,0 +1,75 @@
+{% load i18n %}
+{% load l10n %}
+  <h1>Kulukorvauslomake <span style="text-align: right; font-size: 60%;">{{ expense.num }}</span></h1>
+  <table class="layout"><tr><td>
+  <label>Organisaatio</label>
+  <p>{{ expense.organisation.name }}</p>
+
+  <label>Nimi</label>
+  <p>{{ expense.name }}</p>
+
+  <label>Sähköpostiosoite</label>
+  <p>{{ expense.email }}</p>
+</td>
+<td>
+  <label>IBAN</label>
+  <p>{{ expense.iban }}</p>
+
+  <label>SWIFT</label>
+  <p>{{ expense.swift }}</p>
+
+  <label>Kuvaus</label>
+  <p>{{ expense.description }}</p>
+  </td></tr></table>
+  <h3>Kuluerittely</h3>
+  <table>
+  <thead><tr>
+    <th>Kuvaus</th>
+    <th>Korvaustyyppi (kerroin)</th>
+    <th>Korvausperuste</th>
+    <th>Summa</th>
+  </tr></thead>
+  <tbody>
+  {% for expenseline in expenselines %}
+  <tr>
+    <td>{{ expenseline.description }}</td>
+    <td>{{ expenseline.type.name }} ({{ expenseline.type.multiplier }} per)</td>
+    <td>{{ expenseline.basis }}</td>
+    <td>{{ expenseline.sum }}</td>
+  </tr>
+  {% endfor %}
+  <tr class="total">
+    <td colspan="3">Yhteensä</td>
+    <td>{{ expense.amount|localize }}</td>
+  </tr>
+  </tbody>
+  </table>
+
+  <label>Huomautuksia</label>
+  <p>{{ expense.notes }}</p>
+
+  <h3>Hyväksyminen</h3>
+
+  <label>Työkulku</label>
+  <p>{{ expense.workflow.name }}</p>
+
+  <table>
+  <thead><tr>
+    <th>Tyyppi</th>
+    <th>Päiväys</th>
+    <th>Lisätieto</th>
+    <th>Merkinnän tekijä</th>
+  </tr></thead>
+  <tbody>
+  {% for expenseevent in expenseevents %}
+  <tr>
+    <td>{{ expenseevent.typename }}</td>
+    <td>{{ expenseevent.date }}</td>
+    <td>{{ expenseevent.notes }}</td>
+    <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+
+<p>Voit maksaa kululaskun virtuaaliviivakoodilla {{ expense.barcode }}.</p>
