@@ -16,9 +16,18 @@ from django.contrib.contenttypes.models import ContentType
 from localflavor.generic.models import IBANField, BICField
 from django.template import defaultfilters
 from django.utils import timezone
+from django.db.models import Max
 
 from .finvoice import createFinvoice
 from .katre import createKatreReport
+
+TYPE_CHOICES = (
+  (u'R', u'Vastaanotettu'),
+  (u'E', u'Muokattu'),
+  (u'C', u'Asiahyväksytty'),
+  (u'A', u'Hallinnollisesti hyväksytty'),
+  (u'P', u'Maksettu'),
+)
 
 def validate_hetu(value):
   from stdnum.fi.hetu import is_valid, validate
@@ -39,9 +48,9 @@ def validate_hetu_or_businessid(value):
   from stdnum.fi import hetu
   from stdnum.fi import ytunnus
   from stdnum.exceptions import InvalidChecksum, InvalidFormat
-  
+
   errors = True
-  
+
   try:
     hetu.validate(value)
     errors = False
@@ -55,10 +64,9 @@ def validate_hetu_or_businessid(value):
     errors = False
   except:
     pass
-    
+
   if errors:
     raise ValidationError(ugettext_lazy('Enter a valid Finnish personal identity code or Finnish business ID.'))
-
 
 validators = {
   'personno': [
@@ -102,11 +110,8 @@ class Organisation(models.Model):
   # default=None
   default_expense_type = models.ForeignKey('ExpenseType', null=True, default=None, blank=True, related_name="+", on_delete=models.SET_DEFAULT)
 
-  def __unicode__(self):
-    return self.name
-  
   def __str__(self):
-        return self.name
+    return self.name
 
 def organisation_edited(sender, instance, created, **kwargs):
   codename = 'change_organisation_' + str(instance.id)
@@ -122,7 +127,7 @@ class AccountDimension(models.Model):
 
   organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
 
-  def __unicode__(self):
+  def __str__(self):
     return self.name
 
 class AccountDimensionInline(admin.TabularInline):
@@ -135,6 +140,30 @@ PERSONTYPE_CHOICES = (
   (1, ugettext_lazy('Trustee')),
   (2, ugettext_lazy('Employee')),
 )
+
+class Workflow(models.Model):
+  name = models.CharField('Nimi', max_length=255)
+  organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
+
+  def __str__(self):
+    return self.name
+
+class WorkflowStep(models.Model):
+  workflow = models.ForeignKey(Workflow, on_delete=models.PROTECT, verbose_name='Työkulku')
+  type = models.CharField('Tyyppi', max_length=5, choices=TYPE_CHOICES)
+  users = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name='Valtuutettu', blank=True, null=True)
+
+  def __str__(self):
+    return self.get_type_display() + ': ' + self.users.username
+
+class WorkflowStepInline(admin.TabularInline):
+  model = WorkflowStep
+  extra = 0
+
+class WorkflowAdmin(admin.ModelAdmin):
+  inlines = [
+    WorkflowStepInline,
+  ]
 
 class Person(models.Model):
   user = models.OneToOneField(User, on_delete=models.PROTECT)
@@ -150,7 +179,7 @@ class Person(models.Model):
   def name(self):
     return self.user.first_name + ' ' + self.user.last_name
 
-  def __unicode__(self):
+  def __str__(self):
     return self.name()
 
 def createPerson(sender, user, request, **kwargs):
@@ -159,15 +188,14 @@ def createPerson(sender, user, request, **kwargs):
 user_registered.connect(createPerson)
 
 class PersonAdmin(admin.ModelAdmin):
-  list_display = ('id', '__unicode__', 'type')
+  list_display = ('id', '__str__', 'type')
   list_filter = ('type', )
   search_fields = ('type',)
   actions = ['set_type']
-  
+
   def set_type(self, request, queryset):
       queryset.update(type=1)
   set_type.short_description = "Vaihda luottamushenkilöksi"
-  
 
 class PersonInline(admin.StackedInline):
   model = Person
@@ -204,12 +232,6 @@ class ExpenseType(models.Model):
 
   organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
 
-  def __unicode__(self):
-        return self.name
-
-  def __str__(self):
-        return '%s' % self.name
-
   def js_data(self):
     return {
       'name': self.name,
@@ -219,7 +241,7 @@ class ExpenseType(models.Model):
       'requires_start_time': self.requires_start_time
     }
 
-  def __unicode__(self):
+  def __str__(self):
     if self.requires_receipt:
       return self.name + ' (' + ugettext('Requires receipt') + ')'
     if self.requires_endtime:
@@ -264,7 +286,7 @@ class Expense(models.Model):
   address = models.CharField(ugettext_lazy('Address'), max_length=255, validators=validators['address'])
   iban = IBANField(ugettext_lazy('Bank account no'))
   swift_bic = BICField(ugettext_lazy('BIC no'), blank=True, null=True)
-  personno = models.CharField(ugettext_lazy('Person number'), max_length=11, validators=validators['hetu_or_businessid'], help_text=ugettext_lazy('If you apply for an expense reimbursement for a local group, enter the group’s business ID here. Kilometric allowances and daily subsistence allowances can not be applied for with a business ID.'))
+  personno = models.CharField(ugettext_lazy('Person number'), blank=True, null=True, max_length=11, validators=validators['hetu_or_businessid'], help_text=ugettext_lazy('Required if applying for kilometric or daily subsistence allowances due to tax reporting. If you apply for an expense reimbursement for a local group, enter the group’s business ID here. Kilometric allowances and daily subsistence allowances can not be applied for with a business ID.'))
   user = models.ForeignKey(User,on_delete=models.PROTECT)
 
   description = models.CharField(ugettext_lazy('Purpose'), max_length=255)
@@ -272,6 +294,8 @@ class Expense(models.Model):
   organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
   status = models.IntegerField(ugettext_lazy('Status'), choices=APPLICATION_STATUSES, default=0)
   katre_status = models.IntegerField(ugettext_lazy('Katre status'), choices=KATRE_STATUSES, default=0)
+  workflow = models.ForeignKey(Workflow, verbose_name='Työkulku', on_delete=models.PROTECT)
+  num = models.CharField('Tositenumero', max_length=4)
 
   created_at = models.DateTimeField(ugettext_lazy('Sent'), auto_now_add=True)
   updated_at = models.DateTimeField(ugettext_lazy('Edited'), auto_now=True)
@@ -283,7 +307,7 @@ class Expense(models.Model):
       sum+= line.sum()
     return sum
 
-  def __unicode__(self):
+  def __str__(self):
     return self.name + ': ' + self.description + ' (' + str(self.amount()) + ' e)'
 
   def finvoice(self):
@@ -299,7 +323,7 @@ class Expense(models.Model):
     for line in expenselines:
       if line.expensetype_type in ['FPD', 'PPD', 'FOPD', 'MA', 'T']:
         return True
-    
+
     return False
 
   def katre(self):
@@ -307,6 +331,27 @@ class Expense(models.Model):
     expenselines = ExpenseLine.objects.filter(expense=expense)
 
     return createKatreReport(expense, expenselines)
+
+def create_expense(sender, instance, created, **kwargs):
+  if not instance.num or instance.num == '':
+    max_num = Expense.objects.filter(organisation=instance.organisation).aggregate(Max('num'))
+    if max_num['num__max'] == '' or max_num['num__max'] == 0:
+      max_num['num__max'] = 1000
+    instance.num = int(max_num['num__max']) + 1
+    instance.save()
+#  from django_request_local.middleware import RequestLocal
+#  current_request = RequestLocal.get_current_request()
+#  if not current_request:
+#    return False
+  if created:
+    e = ExpenseEvent(expense=instance, type='R', notes=u'Järjestelmä')
+#    e.user = current_request.user
+    e.save()
+  else:
+    e = ExpenseEvent(expense=instance, type='E')
+#    e.user = current_request.user
+    e.save()
+post_save.connect(create_expense, sender=Expense)
 
 def receipt_path(path, filename):
     import os
@@ -329,7 +374,7 @@ class ExpenseLine(models.Model):
   expensetype_name = models.CharField(ugettext_lazy('Name'), max_length=255)
   expensetype_type = models.CharField(ugettext_lazy('Type'), max_length=5, choices=EXPENSE_TYPES)
   multiplier = models.DecimalField(ugettext_lazy('Multiplier'), max_digits=10, decimal_places=2, help_text=ugettext_lazy('The per price for the expense type (mileage: € per km, other expenses: 1, advances: -1)'))
-  
+
   def save(self):
     self.multiplier = self.expensetype.multiplier
     self.expensetype_type = self.expensetype.type
@@ -340,7 +385,7 @@ class ExpenseLine(models.Model):
   def sum(self):
     return self.basis * self.expensetype.multiplier
 
-  def __unicode__(self):
+  def __str__(self):
     return self.description + ' (' + str(self.sum()) + ' e)'
 
 class ExpenseLineInline(admin.TabularInline):
@@ -354,8 +399,32 @@ def open_katre_again(modeladmin, request, queryset):
         expense.save()
 open_katre_again.short_description = 'Siirrä Katre-ilmoitus avoimeksi'
 
+class ExpenseEvent(models.Model):
+  expense = models.ForeignKey(Expense, verbose_name='Kulukorvaus', on_delete=models.PROTECT)
+  type = models.CharField('Tyyppi', max_length=5, choices=TYPE_CHOICES)
+  date = models.DateField(auto_now_add=True)
+  notes = models.CharField('Lisätietoja', max_length=255, blank=True, null=True)
+  user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name='Merkinnän tekijä', blank=True, null=True)
+
+  def typename(self):
+    return self.get_type_display()
+
+  def __str__(self):
+    return self.get_type_display() + ' (' + self.date.strftime('%d.%m.%Y') + ')'
+
+def create_expenseevent(sender, instance, created, **kwargs):
+  if created:
+#    instance.user = current_user()
+    instance.user_id = 0
+post_save.connect(create_expenseevent, sender=ExpenseEvent)
+
+class ExpenseEventInline(admin.TabularInline):
+  model = ExpenseEvent
+  extra = 1
+  can_delete = False
+
 class ExpenseAdmin(admin.ModelAdmin):
-  list_display = ('id', '__unicode__', 'organisation', 'status', 'katre_status', 'created_at')
+  list_display = ('id', '__str__', 'organisation', 'status', 'katre_status', 'created_at')
   list_filter = (
     'status',
     'organisation',
@@ -366,6 +435,8 @@ class ExpenseAdmin(admin.ModelAdmin):
   search_fields = ('name', 'email', 'description')
   inlines = [
     ExpenseLineInline,
+    ExpenseEventInline,
   ]
   readonly_fields = ('created_at',)
   actions = [open_katre_again,]
+

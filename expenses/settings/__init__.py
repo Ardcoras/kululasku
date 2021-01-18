@@ -11,17 +11,9 @@ sys.path.insert(0, os.path.join(PROJECT_ROOT, "apps"))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 #VAIHDA muuttujat .env tiedostoon juureen
-api_key = os.getenv('SENDGRID_API_KEY')
 DEBUG = os.getenv('DEBUG')
 ALLOWED_HOSTS = list(os.getenv('ALLOWED_HOSTS_STRING').split(','))
-SECRET_KEY=os.getenv('SECRET_KEY')
 
-SENDGRID_API_KEY=api_key
-SENDGRID_SANDBOX_MODE_IN_DEBUG=False
-SENDGRID_TRACK_EMAIL_OPENS=False
-SENDGRID_TRACK_CLICKS_HTML=False
-SENDGRID_TRACK_CLICKS_PLAIN=False
-EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 TEMPLATE_DEBUG = DEBUG
 
 # 2.5MB - 2621440
@@ -36,7 +28,7 @@ TEMPLATE_DEBUG = DEBUG
 MAX_UPLOAD_SIZE = 20971520
 #VAIHDA Admin (Nimi, email) halutuksi. Virheilmoitukset lähetetään sähköpostiin.)
 ADMINS = (
-    ('Perfektio Webmaster', 'sami.lindqvist@perfektio.fi'),
+    ('Webmaster', 'hostmaster@yhrek.fi'),
 )
 
 MANAGERS = ADMINS
@@ -246,5 +238,5 @@ except ImportError:
   pass
 
 #VAIHDA
-DEFAULT_FROM_EMAIL="no-reply@partio.fi"
+DEFAULT_FROM_EMAIL="no-reply@yhrek.fi"
 

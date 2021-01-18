@@ -1,7 +1,7 @@
 django==2.2.13
 python-gettext
 ordereddict
-psycopg2
+#psycopg2
 django-localflavor==3.0
 lxml
 flup
@@ -17,3 +17,4 @@ gunicorn
 django-sendgrid-v5
 python-dotenv
 django-environ
+mysqlclient

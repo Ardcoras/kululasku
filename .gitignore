@@ -18,3 +18,5 @@ expenses/uploads/receipts
 media/receipts/*
 tmp/zips/*
 maintenance_on.html
+*.bak
+*.swp

@@ -2,9 +2,9 @@
 
 Thank you for registering for the system. Visit this link to confirm your email address and activate your account:
 
-https://kululasku.partio.fi{{ url }}
+https://www.yhrek.fi{{ url }}
 
-If you didn't request the account, DO NOT click on the link. If you have any questions or concerns, please refer to https://www.partio.fi/partiolaiselle/apua-ja-ohjeita/jasenpalvelu/.
+If you didn't request the account, DO NOT click on the link. If you have any questions or concerns, please contact info@yhrek.fi
 
 Best regards,
 -- 

@@ -1,26 +1,29 @@
-version: "3.7"
+#version: "3.7"
+version: "2"
 
 services:
-  db:
-    image: postgres:12.0-alpine
-    restart: unless-stopped
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      #Tarkista polut kuntoon omalle ympäristöllesi
-      #- /haluttupolku/:/db_dumps/
+#  db:
+#    image: postgres:12.0-alpine
+#    restart: unless-stopped
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#      #Tarkista polut kuntoon omalle ympäristöllesi
+#      #- /haluttupolku/:/db_dumps/
   web:
     restart: unless-stopped
     build: .
     entrypoint: ["./wait_for_pg_and_start.sh", "./run.sh"]
+    env_file:
+      - 'env'
     volumes:
       - .:/code
       #Tarkista polut kuntoon omalle ympäristöllesi
-      #- /haluttupolku/uploads/receipts:/media/uploads/receipts/
-      #- /haluttupolku/uploads/zips:/tmp/zips/
-    env_file: .env
+      - ./uploads/receipts:/media/uploads/receipts/
+      - ./uploads/zips:/tmp/zips/
     ports:
       - 8000:8000
-    depends_on:
-      - db
-volumes:
-  postgres_data:
+    external_links:
+      - mysql:mysql
+    network_mode: bridge
+#volumes:
+#  postgres_data:

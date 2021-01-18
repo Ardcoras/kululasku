@@ -12,7 +12,7 @@ from localflavor.generic.forms import BICFormField, IBANFormField
 from expenses.settings import MAX_UPLOAD_SIZE
 
 from expenseapp.forms import inline_snippet
-from expenseapp.models import Expense, ExpenseLine, ExpenseType, Person, Organisation, User
+from expenseapp.models import Expense, ExpenseLine, ExpenseType, Person, Organisation, User, Workflow
 
 class ModelForm(inline_snippet.ModelForm):
   def __new__(cls, *args, **kwargs):
@@ -141,7 +141,7 @@ class ExpenseForm(ModelForm):
   
   class Meta:
     model = Expense
-    exclude = ('status', 'katre_status')
+    exclude = ('num', 'status', 'katre_status')
     widgets = {
       'organisation': forms.HiddenInput,
       'user': forms.HiddenInput
@@ -152,6 +152,21 @@ class ExpenseForm(ModelForm):
       'expenselines': ExpenseLineFormset,
     }
 
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    current_request = get_current_request()
+    r = re.compile(r'^/expense/new/(?P<organisation_id>\d+)$')
+
+    match = r.match(current_request.path)
+    if match == None:
+      messages.error(request, ugettext_lazy('Organisation ID was not found.'))
+      return HttpResponseRedirect(reverse('expense_new'))
+
+    orgid = int(match.groups()[0])
+    organisation = Organisation.objects.get(id=orgid)
+    workflows = Workflow.objects.filter(organisation=organisation)
+
+    self.fields["workflow"].queryset = workflows
 
 class PersonForm(ModelForm):
   firstname = forms.CharField(label=ugettext_lazy('First name'), max_length=255, required=True, widget=forms.TextInput())
