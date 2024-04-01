@@ -2,19 +2,29 @@
 
 import os
 import sys
-from django.urls import reverse
 import locale
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__).replace('settings', ''), ''))
+PROJECT_ROOT = os.path.abspath(os.path.join(
+    os.path.dirname(__file__).replace('settings', ''), ''))
 sys.path.insert(0, os.path.join(PROJECT_ROOT, "apps"))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-#VAIHDA muuttujat .env tiedostoon juureen
-DEBUG = os.getenv('DEBUG')
+# VAIHDA muuttujat .env tiedostoon juureen
+api_key = os.getenv('SENDGRID_API_KEY')
+# Python vaatii tekstin converttauksen booleaniksi toimiakseen
+DEBUG = os.getenv('DEBUG') == 'True'
 ALLOWED_HOSTS = list(os.getenv('ALLOWED_HOSTS_STRING').split(','))
+SECRET_KEY = os.getenv('SECRET_KEY')
 
+SENDGRID_API_KEY = api_key
+SENDGRID_SANDBOX_MODE_IN_DEBUG = False
+SENDGRID_TRACK_EMAIL_OPENS = False
+SENDGRID_TRACK_CLICKS_HTML = False
+SENDGRID_TRACK_CLICKS_PLAIN = False
+EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
 TEMPLATE_DEBUG = DEBUG
+locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
 
 # 2.5MB - 2621440
 # 5MB - 5242880
@@ -26,7 +36,7 @@ TEMPLATE_DEBUG = DEBUG
 # 250MB - 214958080
 # 500MB - 429916160
 MAX_UPLOAD_SIZE = 20971520
-#VAIHDA Admin (Nimi, email) halutuksi. Virheilmoitukset lähetetään sähköpostiin.)
+# VAIHDA Admin (Nimi, email) halutuksi. Virheilmoitukset lähetetään sähköpostiin.)
 ADMINS = (
     ('Webmaster', 'hostmaster@yhrek.fi'),
 )
@@ -36,13 +46,16 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'postgres',                      # Or path to database file if using sqlite3.
+        # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.postgresql',
+        # Or path to database file if using sqlite3.
+        'NAME': 'postgres',
         # The following settings are not used with sqlite3:
         'USER': 'postgres',
-        #'PASSWORD': '',
+        # 'PASSWORD': '',
         # Docker-composesta viittaus
-        'HOST': 'db',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'HOST': 'db',
         'PORT': '5432',                      # Set to empty string for default.
     }
 }
@@ -58,16 +71,16 @@ TIME_ZONE = 'Europe/Helsinki'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'fi-Fi'
+LANGUAGE_CODE = 'fi-FI'
 #LANGUAGE_CODE = 'fi'
 
 LANGUAGES = (
-  ('fi-FI', _('Finnish')),
-  ('sv-SE', _('Swedish')),
-  ('en-EN', _('English')),
+    ('fi-FI', _('Finnish')),
+    ('sv-SE', _('Swedish')),
+    ('en-EN', _('English')),
 )
 
-LOCALE_PATHS =  [
+LOCALE_PATHS = [
     os.path.join(BASE_DIR, 'locale'),
 ]
 
@@ -116,7 +129,7 @@ STATICFILES_DIRS = (
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
+    #    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 # List of callables that know how to import templates from various sources.
@@ -157,6 +170,7 @@ TEMPLATES = [
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
                 'django.contrib.messages.context_processors.messages',
+                'expenseapp.context_processors.infobanner_processor.info_message'
             ],
         },
     },
@@ -196,7 +210,7 @@ INSTALLED_APPS = (
     'expenseapp',
     'django.contrib.admin',
     'django_registration',
-    'django.contrib.flatpages'
+    'django.contrib.flatpages',
 )
 
 ACCOUNT_ACTIVATION_DAYS = 14
@@ -219,7 +233,11 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
-        }
+        },
+        'null': {
+            'level': 'DEBUG',
+            'class': 'logging.NullHandler',
+        },
     },
     'loggers': {
         'django.request': {
@@ -227,16 +245,19 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'django.security.DisallowedHost': {
+            'handlers': ['null'],
+            'propagate': False,
+        },
     }
 }
 
 EMAIL_SUBJECT_PREFIX = '[Kululasku] '
 
 try:
-  from .local import *
+    from .local import *
 except ImportError:
   pass
 
 #VAIHDA
 DEFAULT_FROM_EMAIL="no-reply@yhrek.fi"
-

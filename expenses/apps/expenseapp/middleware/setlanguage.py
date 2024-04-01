@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from django.shortcuts import get_object_or_404
 from django.utils import translation
 from expenseapp.models import Person
 from expenses import settings
+
 
 class ExpenseAppSetLanguageMiddleware(object):
     def process_request(self, request):

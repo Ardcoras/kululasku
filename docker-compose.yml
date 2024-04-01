@@ -2,6 +2,7 @@
 version: "2"
 
 services:
+<<<<<<< HEAD
 #  db:
 #    image: postgres:12.0-alpine
 #    restart: unless-stopped
@@ -9,6 +10,17 @@ services:
 #      - postgres_data:/var/lib/postgresql/data
 #      #Tarkista polut kuntoon omalle ympäristöllesi
 #      #- /haluttupolku/:/db_dumps/
+=======
+  db:
+    image: postgres:12.9-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      #Tarkista polut kuntoon omalle ympäristöllesi
+      #- /haluttupolku/:/db_dumps/
+>>>>>>> origin/master
   web:
     restart: unless-stopped
     build: .
@@ -18,8 +30,14 @@ services:
     volumes:
       - .:/code
       #Tarkista polut kuntoon omalle ympäristöllesi
+<<<<<<< HEAD
       - ./uploads/receipts:/media/uploads/receipts/
       - ./uploads/zips:/tmp/zips/
+=======
+      #- /haluttupolku/uploads/zips:/tmp/zips/
+      - ./tmp/pdfs:/tmp/pdfs
+    env_file: .env
+>>>>>>> origin/master
     ports:
       - 8000:8000
     external_links:

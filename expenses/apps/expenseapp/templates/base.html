@@ -1,7 +1,10 @@
 {% load i18n %}
 <!DOCTYPE html>
 <head>
-  {% load staticfiles %}
+  {% load static %}
+  <title>
+    {{page_title|default:"Kululasku palvelu"}}
+  </title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -49,14 +52,14 @@
               <a href="#" class="pure-menu-allow-hover">{% trans 'Languages' %}</a>
               <ul class="dropdown-content" style="list-style: none; padding-left: 0px;">
                 {% get_current_language as LANGUAGE_CODE %}
-                {% if LANGUAGE_CODE != 'fi-fi' %}
+                {% if LANGUAGE_CODE != 'fi-FI' %}
                   <li class="drop-item"><a href="/i18n/fi" class="drop-item-link">suomeksi</a></li>
                 {% endif %}
 
-                {% if LANGUAGE_CODE != 'sv-se' %}
+                {% if LANGUAGE_CODE != 'sv-SE' %}
                   <li class="drop-item"><a href="/i18n/sv" class="drop-item-link">på svenska</a></li>
                 {% endif %}
-                {% if LANGUAGE_CODE != 'en-en' %}
+                {% if LANGUAGE_CODE != 'en-EN' %}
                   <li class="drop-item"><a href="/i18n/en" class="drop-item-link">in English</a></li>
                 {% endif %}
               </ul>
@@ -76,6 +79,13 @@
 {% endblock header %}
 
   <div id="main">
+    {% if info_message %}
+        <div class="messages alert alert-info">
+          <h2>{{info_message.title}}</h2>
+          <p>{{info_message.description}}</p>
+        </div>
+    {% endif %}
+
     {% if messages %}
       <ul class="messages">
       {% for message in messages %}

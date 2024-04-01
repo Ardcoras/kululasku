@@ -2,11 +2,12 @@ FROM python:3
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update && apt-get -y upgrade
-RUN apt-get install -y nginx netcat net-tools gettext
+RUN apt-get install --fix-missing -y nginx netcat net-tools gettext libxml2-dev libxslt-dev openssl python3-lxml wkhtmltopdf
 
 RUN mkdir /code
 WORKDIR /code
 RUN mkdir media static logs
+#ENV PYTHONWARNINGS="always"
 
 RUN apt-get install -y locales
 RUN echo "Europe/Helsinki" > /etc/timezone && \ 

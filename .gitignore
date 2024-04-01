@@ -2,6 +2,8 @@ kululasku.sqlite
 testikanta.sqlite
 .env*
 *.sql
+*.cert
+*.pem
 docker-compose-local.yml
 docker-compose-prod.yml
 texts.txt
@@ -13,6 +15,7 @@ __pycache__
 sendgrid.env
 staticfiles/*
 .vscode/*
+storage/*
 static/uploads/receipts/*
 expenses/uploads/receipts
 media/receipts/*
@@ -20,3 +23,5 @@ tmp/zips/*
 maintenance_on.html
 *.bak
 *.swp
+fennoa_credentials.json
+tmp/*

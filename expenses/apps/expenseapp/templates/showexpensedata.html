@@ -1,34 +1,5 @@
-{% load i18n %}
-<h1>{% blocktrans with organisation_name=expense.organisation.name %}Expense for {{ organisation_name }}{% endblocktrans %}</h1>
-
 <div class="pure-g">
-  <div class="pure-u-1 blue-bottom">
-    <h2>{% trans 'Ilmoittajan tiedot'%}</h2>
-    {% for id, field in fields.items %}
-      <p class="subject">{{ field.label}}:</p>
-        {% if id == 'total' %}
-      <p class="value">{{ field.value | floatformat:"2" }} €</p>    
-        {% elif id == 'date' %}
-      <p class="value">{{ field.value | date:"j.n.Y H.i" }}</p>    
-        {% else %}
-      <p class="value">{{ field.value }}</p>
-    {% endif %}
-    
-    {# Split to second column #}
-    {% if id == 'personno' %}
-      </div> 
-        
-      <div class="pure-u-1 blue-bottom">
-        <h2 class="ykskaks">{% trans "Kululaskun tiedot" %}</h2>
-    {% endif %}
-  {% endfor %}
-  </div>
-</div>
-
-
-
-<div class="pure-g">
-  <div class="pure-u-1" style="padding: 30px;">
+  <div class="pure-u-1">
   <h2>{% trans 'Expenses'%}</h2>
   {% for line in lines %}
   
@@ -88,5 +59,4 @@
       {% endif %}
     </dl>
   </li> -->
-</div>
-<!-- </ul> -->
+  
