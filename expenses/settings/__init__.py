@@ -276,7 +276,7 @@ EMAIL_HOST = os.getenv('SMTP_HOST')
 EMAIL_HOST_USER = os.getenv('SMTP_USER')
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD')
 EMAIL_PORT = os.getenv('SMTP_PORT')
-#EMAIL_USE_TLS = True
+EMAIL_USE_TLS = True
 locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
 
 #locale.setlocale(locale.LC_ALL, 'fi_FI')

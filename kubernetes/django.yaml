@@ -13,7 +13,7 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 80
+    - port: 8000
       nodePort: 30785
   selector:
     app: django
@@ -67,7 +67,7 @@ spec:
               value: '+358503780711'
             - name: MYSQL_USER
               value: yhrek
-            - name: MYSQL_DATABASE
+            - name: MYSQL_NAME
               value: yhrek_prod
             - name: MYSQL_HOST
               value: wildgeese.ardcoras.fi
