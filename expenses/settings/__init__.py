@@ -261,11 +261,11 @@ import locale, os
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': os.getenv('DB_NAME'),                      # Or path to database file if using sqlite3.
+        'NAME': os.getenv('MYSQL_NAME'),                      # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'USER': os.getenv('MYSQL_USER'),
+        'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+        'HOST': os.getenv('MYSQL_HOST'),                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
         'PORT': '3306'                   # Set to empty string for default.
     }
 }

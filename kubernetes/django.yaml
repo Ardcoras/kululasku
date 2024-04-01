@@ -14,7 +14,7 @@ spec:
   type: NodePort
   ports:
     - port: 80
-      nodePort: 30781
+      nodePort: 30785
   selector:
     app: django
 ---
@@ -43,11 +43,11 @@ spec:
       imagePullSecrets:
         - name: regcred
       containers:
-        - image: ghcr.io/ardcoras/yhrek:master
+        - image: ghcr.io/ardcoras/kululasku:yhrek
           name: django
           imagePullPolicy: Always
           ports:
-            - containerPort: 30781
+            - containerPort: 30785
               name: django
           volumeMounts:
             - name: files
@@ -60,7 +60,7 @@ spec:
             - name: ALLOWED_HOSTS_STRING
               value: 'www.yhrek.fi'
             - name: DEBUG
-              value: 'FAlse'
+              value: 'False'
             - name: CONTACT_NAME
               value: 'Jyri-Petteri Paloposki'
             - name: CONTACT_NUM
@@ -133,10 +133,18 @@ spec:
     - websecure
     - web
   routes:
+    - match: Host(`yhrek.fi`)
+      kind: Rule
+      middlewares:
+        - name: redirect-non-to-www
+          namespace: traefik
+      services:
+        - name: noop@internal
+          kind: TraefikService
     - match: Host(`www.yhrek.fi`)
       kind: Rule
       middlewares:
         - name: headers-default@file
       services:
         - name: django
-          port: 80
+          port: 8000
