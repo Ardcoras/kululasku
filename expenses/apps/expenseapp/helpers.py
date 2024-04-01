@@ -51,12 +51,13 @@ Yhrek.fi
       body % (instance.organisation.name, instance.name, instance.description, instance.memo, rows, str(locale.currency(instance.amount(), False))),
       'info@yhrek.fi', [instance.cc_email], fail_silently=False)
 
-import io
+import io, os
 from django.http import HttpResponse
 import PyPDF2
 from weasyprint import HTML
 from django.template.loader import render_to_string
 from PIL import Image
+import tempfile
 
 def render_to_pdf(template_src, context_dict, additional=[]):
   html_string = render_to_string(template_src, context_dict)
@@ -64,17 +65,27 @@ def render_to_pdf(template_src, context_dict, additional=[]):
   html = HTML(string=html_string)
   form = io.BytesIO(html.write_pdf())
 
-  pdf = PyPDF2.PdfFileMerger()
+  pdf = PyPDF2.PdfFileMerger(strict=False)
   pdf.append(form)
 
   for file in additional:
     if file.name:
       filename = file.url
-      if '.jpg' in file.name.lower() or '.png' in file.name.lower():
-        im = Image.open(filename)
-        filename = filename.replace('.jpg', '.pdf')
-        im.save(filename, "PDF", resolution=200.0)
-      pdf.append(open(filename, 'rb'))
+      if '.jpg' in file.name.lower() or '.png' in file.name.lower() or '.jpeg' in file.name.lower():
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        try:
+          im = Image.open(filename)
+          if im.mode == 'RGBA':
+            im = im.convert('RGB')
+#          filename = filename.replace('.jpg', '.pdf').replace('.png', '.pdf')
+#          im.save(filename, "PDF", resolution=200.0)
+          im.save(tmp.name, "PDF", resolution=200.0)
+          pdf.append(open(tmp.name, 'rb'))
+        finally:
+          tmp.close()
+          os.unlink(tmp.name)
+      else:
+        pdf.append(open(filename, 'rb'), import_bookmarks=False)
 
   output = io.BytesIO()
   pdf.write(output)

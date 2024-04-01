@@ -1,9 +1,10 @@
-{% extends "showexpense.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 
 {% block header %}{% endblock %}
 
-{% block content_footer %}
+{% block content %}
+{% include "showexpensedata.html" %}
 
 	<div id="expense-preview-buttons" style="overflow: hidden; text-align: center;">
 		<div class="submit-button-wrapper">

@@ -4,16 +4,16 @@
 {% block content %}
 <h1>{% blocktrans %}Organisation data{% endblocktrans %}</h1>
 
-<!-- <aside class="sidebar">
+<aside class="sidebar">
   <section class="pure-menu pure-menu-open">
     <h2 class="pure-menu-heading">{% trans "Annual report" %}</h2>
     <ul>
     {% for year in years %}
-      <li><a href="{% url 'organisation_annualreport' organisation_id=orgid year=year %}">{{ year }}</a></li>
+      <li><a href="{% url 'organisation_annualarchive' organisation_id=orgid year=year %}">{{ year }}</a></li>
     {% endfor %}
     </ul>
   </section>
-</aside> -->
+</aside>
 
 <form action='{% url 'organisation_edit' orgid %}' id='organisation-form' method='post' class="pure-form pure-form-aligned" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} data-parsley-validate>
   {% csrf_token %}

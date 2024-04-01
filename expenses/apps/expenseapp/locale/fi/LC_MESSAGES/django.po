@@ -731,6 +731,9 @@ msgstr "Kulukorvaus organisaatiolle"
 msgid "Expenses"
 msgstr "Kulut"
 
+msgid "Data protection"
+msgstr "Tietosuoja"
+
 #: templates/expense.html:53 templates/organisationedit.html:55
 msgid "Add new row"
 msgstr "Lisää rivi"

@@ -33,7 +33,7 @@
   {% for expenseline in expenselines %}
   <tr>
     <td>{{ expenseline.description }}</td>
-    <td>{{ expenseline.type.name }} ({{ expenseline.type.multiplier }} per)</td>
+    <td>{{ expenseline.expensetype_name }} ({{ expenseline.multiplier }} per)</td>
     <td>{{ expenseline.basis }}</td>
     <td>{{ expenseline.sum }}</td>
   </tr>

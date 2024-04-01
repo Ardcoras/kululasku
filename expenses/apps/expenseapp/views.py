@@ -226,7 +226,7 @@ def expense(request, organisation_id):
 def showexpense(request, expense_id):
   expense = get_object_or_404(Expense, pk=expense_id)
 
-  if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense')):
+  if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
     return redirect('/accounts/login/?next=%s' % request.path)
 
   fields = OrderedDict()
@@ -321,9 +321,18 @@ def personinfo(request):
     'orgs': orgs,
   })
 
-@permission_required('expenseapp.change_expense')
+@login_required
 def expense_list(request):
-  expenses = Expense.objects.all()
+  if request.user.has_perm('expenseapp.change_expense'):
+    expenses = Expense.objects.all()
+  else:
+    workflowsteps = WorkflowStep.objects.filter(users=request.user)
+
+#    condition = reduce(operator.and_, [Q(workflow=wfstep.workflow) for wfstep in workflowsteps])
+    workflows = []
+    for wfstep in workflowsteps:
+      workflows.append(wfstep.workflow)
+    expenses = Expense.objects.filter(workflow__in=workflows)
 
   return render(request, 'expense_list.html', {
     'expenses': expenses,
@@ -332,7 +341,7 @@ def expense_list(request):
 @login_required
 def expense_addstep(request, expense_id):
   expense = get_object_or_404(Expense, id=expense_id)
-  if not (request.user == expense.user_id or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
+  if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
     return redirect('/accounts/login/?next=%s' % request.path)
 
   wfsteps = WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)
@@ -400,6 +409,7 @@ def expense_view_pdf(request, expense_id):
   return render_to_pdf('expense_view_pdf.html',
     context_data, receipts)
 
+@login_required
 def organisationedit(request, organisation_id):
   if not request.user.has_perm('expenseapp.change_organisation_' + str(organisation_id)):
     return redirect('/login/?next=%s' % request.path)
@@ -426,6 +436,15 @@ def organisationedit(request, organisation_id):
     'orgid': organisation_id,
   })
 
+@login_required
+def annualarchive(request, organisation_id, year):
+  if not request.user.has_perm('expenseapp.change_organisation_' + str(organisation_id)):
+    return redirect('/login/?next=%s' % request.path)
+
+  organisation = get_object_or_404(Organisation, pk=organisation_id)
+  expenses = Expense.objects.filter(organisation=organisation, created_at__year=year).order_by('personno')
+
+@login_required
 def annualreport(request, organisation_id, year):
   if not request.user.has_perm('expenseapp.change_organisation_' + str(organisation_id)):
     return redirect('/login/?next=%s' % request.path)

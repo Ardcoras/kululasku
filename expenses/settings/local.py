@@ -12,7 +12,7 @@ DATABASES = {
     }
 }
 
-SECRET_KEY='CHANGE_ME_PLEASE'
+SECRET_KEY=os.getenv('SECRET_KEY')
 ROOT_URLCONF = 'expenses.urls'
 
 EMAIL_HOST = os.getenv('EMAIL_HOST')

@@ -22,6 +22,8 @@ from django.db.models import Max
 from .finvoice import createFinvoice
 from .katre import createKatreReport
 
+from django.core.mail import send_mail
+
 TYPE_CHOICES = (
   (u'R', u'Vastaanotettu'),
   (u'E', u'Muokattu'),
@@ -126,7 +128,7 @@ class AccountDimension(models.Model):
   name = models.CharField(ugettext_lazy('Name'), max_length=255)
   code = models.CharField(ugettext_lazy('Account dimension code'), max_length=5, help_text=ugettext_lazy('Account dimension code(s). If multiple, separate with semicolons (;).'))
 
-  organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
+  organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
 
   def __str__(self):
     return self.name
@@ -144,15 +146,15 @@ PERSONTYPE_CHOICES = (
 
 class Workflow(models.Model):
   name = models.CharField('Nimi', max_length=255)
-  organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
+  organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
 
   def __str__(self):
     return self.name
 
 class WorkflowStep(models.Model):
-  workflow = models.ForeignKey(Workflow, on_delete=models.PROTECT, verbose_name='Työkulku')
+  workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, verbose_name='Työkulku')
   type = models.CharField('Tyyppi', max_length=5, choices=TYPE_CHOICES)
-  users = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name='Valtuutettu', blank=True, null=True)
+  users = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Valtuutettu', blank=True, null=True)
 
   def __str__(self):
     return self.get_type_display() + ': ' + self.users.username
@@ -167,7 +169,7 @@ class WorkflowAdmin(admin.ModelAdmin):
   ]
 
 class Person(models.Model):
-  user = models.OneToOneField(User, on_delete=models.PROTECT)
+  user = models.OneToOneField(User, on_delete=models.CASCADE)
 
   phone = models.CharField(ugettext_lazy('Phone'), max_length=255, blank=True, null=True, validators=validators['phoneno'])
   address = models.CharField(ugettext_lazy('Address'), max_length=255, blank=True, null=True, validators=validators['address'])
@@ -231,7 +233,7 @@ class ExpenseType(models.Model):
   account = models.CharField(ugettext_lazy('Account'), max_length=20)
   unit = models.CharField(ugettext_lazy('Unit'), max_length=5, choices=UNITS)
 
-  organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
+  organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
 
   def js_data(self):
     return {
@@ -288,14 +290,14 @@ class Expense(models.Model):
   iban = IBANField(ugettext_lazy('Bank account no'))
   swift_bic = BICField(ugettext_lazy('BIC no'), blank=True, null=True)
   personno = models.CharField(ugettext_lazy('Person number'), blank=True, null=True, max_length=11, validators=validators['hetu_or_businessid'], help_text=ugettext_lazy('Required if applying for kilometric or daily subsistence allowances due to tax reporting. If you apply for an expense reimbursement for a local group, enter the group’s business ID here. Kilometric allowances and daily subsistence allowances can not be applied for with a business ID.'))
-  user = models.ForeignKey(User,on_delete=models.PROTECT)
+  user = models.ForeignKey(User,on_delete=models.CASCADE)
 
   description = models.CharField(ugettext_lazy('Purpose'), max_length=255)
   memo = models.TextField(ugettext_lazy('Info'), help_text=ugettext_lazy('Eg. Names of the additional passengers, people in the meeting, cost centre or activity sector.'), blank=True, null=True)
-  organisation = models.ForeignKey(Organisation, on_delete=models.PROTECT)
+  organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
   status = models.IntegerField(ugettext_lazy('Status'), choices=APPLICATION_STATUSES, default=0)
   katre_status = models.IntegerField(ugettext_lazy('Katre status'), choices=KATRE_STATUSES, default=0)
-  workflow = models.ForeignKey(Workflow, verbose_name='Työkulku', on_delete=models.PROTECT)
+  workflow = models.ForeignKey(Workflow, verbose_name='Työkulku', on_delete=models.CASCADE)
   num = models.CharField('Tositenumero', max_length=4)
 
   created_at = models.DateTimeField(ugettext_lazy('Sent'), auto_now_add=True)
@@ -423,10 +425,10 @@ class ExpenseLine(models.Model):
   begin_at = models.DateTimeField(ugettext_lazy('Begin at'))
   ended_at = models.DateTimeField(ugettext_lazy('Ended at'), blank=True, null=True)
 
-  expensetype = models.ForeignKey(ExpenseType, verbose_name=ugettext_lazy('Expense type'), on_delete=models.PROTECT)
-  accountdimension = models.ForeignKey(AccountDimension, verbose_name=ugettext_lazy('Cost centre'), blank=True, null=True, on_delete=models.PROTECT)
+  expensetype = models.ForeignKey(ExpenseType, verbose_name=ugettext_lazy('Expense type'), on_delete=models.CASCADE)
+  accountdimension = models.ForeignKey(AccountDimension, verbose_name=ugettext_lazy('Cost centre'), blank=True, null=True, on_delete=models.CASCADE)
   basis = models.DecimalField(ugettext_lazy('Amount'), max_digits=10, decimal_places=2, help_text=ugettext_lazy('Amount of kilometres, days or the sum of the expense'))
-  expense = models.ForeignKey(Expense, on_delete=models.PROTECT)
+  expense = models.ForeignKey(Expense, on_delete=models.CASCADE)
 
   receipt = models.FileField(ugettext_lazy('Receipt'), upload_to='uploads/receipts', blank=True, null=True, help_text=ugettext_lazy('A scan or picture of the receipt. Accepted formats include PDF, PNG and JPG. Note: The receipt must clearly show what, when and how much has been paid!'))
 
@@ -460,11 +462,11 @@ def open_katre_again(modeladmin, request, queryset):
 open_katre_again.short_description = 'Siirrä Katre-ilmoitus avoimeksi'
 
 class ExpenseEvent(models.Model):
-  expense = models.ForeignKey(Expense, verbose_name='Kulukorvaus', on_delete=models.PROTECT)
+  expense = models.ForeignKey(Expense, verbose_name='Kulukorvaus', on_delete=models.CASCADE)
   type = models.CharField('Tyyppi', max_length=5, choices=TYPE_CHOICES)
   date = models.DateField(auto_now_add=True)
   notes = models.CharField('Lisätietoja', max_length=255, blank=True, null=True)
-  user = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name='Merkinnän tekijä', blank=True, null=True)
+  user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Merkinnän tekijä', blank=True, null=True)
 
   def typename(self):
     return self.get_type_display()
@@ -476,6 +478,14 @@ def create_expenseevent(sender, instance, created, **kwargs):
   if created:
 #    instance.user = current_user()
     instance.user_id = 0
+    if instance.type == 'P':
+      send_mail(
+        'Kululaskusi on maksettu',
+        "Hei,\n\nKululaskusi " + str(instance.expense) + " on maksettu.\n\nTerveisin,\n-- \nYhrek.fi",
+        'info@yhrek.fi',
+        [instance.expense.email],
+        fail_silently=False,
+      )
 post_save.connect(create_expenseevent, sender=ExpenseEvent)
 
 class ExpenseEventInline(admin.TabularInline):

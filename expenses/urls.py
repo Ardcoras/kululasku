@@ -14,6 +14,7 @@ urlpatterns =  [
   path('i18n/<str:lang>', views.language_activate, name='language_activate'),
   path('organisation/<int:organisation_id>', views.organisationedit, name='organisation_edit'),
   path('organisation/<int:organisation_id>/annualreport/<str:year>', views.annualreport, name='organisation_annualreport'),
+  path('organisation/<int:organisation_id>/annualarchive/<str:year>', views.annualarchive, name='organisation_annualarchive'),
   path('expense/', views.organisationselection, name='expense_new'),
   path('expense/own/', views.ownexpenses, name='expense_own'),
   path('expense/act/', views.expense_actable_list, name='expense_actable_list'),

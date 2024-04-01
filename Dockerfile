@@ -6,11 +6,7 @@ RUN apt-get install -y nginx netcat net-tools gettext
 
 RUN mkdir /code
 WORKDIR /code
-ADD requirements.txt /code/
 RUN mkdir media static logs
-
-RUN pip install -r requirements.txt
-ADD . /code
 
 RUN apt-get install -y locales
 RUN echo "Europe/Helsinki" > /etc/timezone && \ 
@@ -25,6 +21,10 @@ RUN export LOCALE_PATHS="/usr/share/i18n"
 
 COPY ./django_local_nginx.conf /etc/nginx/sites-available/
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+
+ADD requirements.txt /code/
+RUN pip install -r requirements.txt
+ADD . /code
 
 EXPOSE 8000
 COPY ./run.sh /
