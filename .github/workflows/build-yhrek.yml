@@ -10,7 +10,7 @@ jobs:
     name: 'Build latest'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2 # Checking out the repo
+      - uses: actions/checkout@v4 # Checking out the repo
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@v2
