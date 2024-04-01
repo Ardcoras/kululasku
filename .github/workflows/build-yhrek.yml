@@ -31,6 +31,6 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/Ardcoras/kululasku:yhrek
+            ghcr.io/ardcoras/kululasku:yhrek
 
 #          platforms: linux/amd64,linux/arm64
