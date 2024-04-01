@@ -1,26 +1,32 @@
 {% load i18n %}
 {% load l10n %}
   <h1>Kulukorvauslomake <span style="text-align: right; font-size: 60%;">{{ expense.num }}</span></h1>
-  <table class="layout"><tr><td>
-  <label>Organisaatio</label>
-  <p>{{ expense.organisation.name }}</p>
+  <dl>
+    <dt>Organisaatio</dt>
+    <dd>{{ expense.organisation.name }}</dd>
 
-  <label>Nimi</label>
-  <p>{{ expense.name }}</p>
+    <dt>Nimi</dt>
+    <dd>{{ expense.name }}</dd>
 
-  <label>Sähköpostiosoite</label>
-  <p>{{ expense.email }}</p>
-</td>
-<td>
-  <label>IBAN</label>
-  <p>{{ expense.iban }}</p>
+    <dt>Sähköpostiosoite</dt>
+    <dd>{{ expense.email }}</dd>
 
-  <label>SWIFT</label>
-  <p>{{ expense.swift }}</p>
+    <dt>IBAN</dt>
+    <dd>{{ expense.iban }}</dd>
 
-  <label>Kuvaus</label>
-  <p>{{ expense.description }}</p>
-  </td></tr></table>
+    <dt>SWIFT</dt>
+    <dd>{{ expense.swift }}</dd>
+
+    <dt>Kuvaus</dt>
+    <dd>{{ expense.description }}</dd>
+
+    <dt>Huomautuksia</dt>
+    <dd>{{ expense.notes }}</dd>
+
+    <dt>Työkulku</dt>
+    <dd>{{ expense.workflow.name }}</dd>
+  </dl>
+
   <h3>Kuluerittely</h3>
   <table>
   <thead><tr>
@@ -45,26 +51,20 @@
   </tbody>
   </table>
 
-  <label>Huomautuksia</label>
-  <p>{{ expense.notes }}</p>
-
   <h3>Hyväksyminen</h3>
-
-  <label>Työkulku</label>
-  <p>{{ expense.workflow.name }}</p>
 
   <table>
   <thead><tr>
-    <th>Tyyppi</th>
     <th>Päiväys</th>
+    <th>Tyyppi</th>
     <th>Lisätieto</th>
     <th>Merkinnän tekijä</th>
   </tr></thead>
   <tbody>
   {% for expenseevent in expenseevents %}
   <tr>
+    <td>{{ expenseevent.date|date:'j.n.Y' }}</td>
     <td>{{ expenseevent.typename }}</td>
-    <td>{{ expenseevent.date }}</td>
     <td>{{ expenseevent.notes }}</td>
     <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
   </tr>

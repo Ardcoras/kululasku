@@ -321,6 +321,9 @@ class Person(models.Model):
     def __unicode__(self):
         return f'{self.name()} – {self.user.email}'
 
+    def __str__(self):
+        return f'{self.name()} – {self.user.email}'
+
     class Meta:
         verbose_name_plural = "Henkilötiedot"  # 2 spaces
 
@@ -471,8 +474,8 @@ class Expense(models.Model):
         'Address'), max_length=255, validators=validators['address'])
     iban = IBANField(gettext_lazy('Bank account no'))
     swift_bic = BICField(gettext_lazy('BIC no'), blank=True, null=True)
-    personno = models.CharField(gettext_lazy('Person number'), max_length=11, validators=validators['hetu_or_businessid'], help_text=gettext_lazy(
-        'If you apply for an expense reimbursement for a local group, enter the group’s business ID here. Kilometric allowances and daily subsistence allowances can not be applied for with a business ID.'))
+    personno = models.CharField(gettext_lazy('Person number'), max_length=11, blank=True, null=True, validators=validators['hetu_or_businessid'], help_text=gettext_lazy(
+        'Required if applying for kilometric or daily subsistence allowances due to tax reporting. If you apply for an expense reimbursement for a local group, enter the group’s business ID here. Kilometric allowances and daily subsistence allowances can not be applied for with a business ID.'))
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     # TODO: vaihda Kululaskun kohdistus ja help_text
     description = models.CharField(gettext_lazy('Allocation of cost'), help_text=gettext_lazy(
@@ -538,64 +541,64 @@ class Expense(models.Model):
         verbose_name = "Kululasku"
 
 
-  def amount(self):
-    sum = 0
-    lines = ExpenseLine.objects.filter(expense=self)
-    for line in lines:
-      sum+= line.sum()
-    return sum
-
-  def c_approved(self):
-    e = ExpenseEvent.objects.filter(expense=self, type='C')
-    if e:
-      return e[0].date
-
-  def admin_approved(self):
-    e = ExpenseEvent.objects.filter(expense=self, type='A')
-    if e:
-      return e[0].date
-
-  def paid(self):
-    e = ExpenseEvent.objects.filter(expense=self, type='P')
-    if e:
-      return e[0].date
-
-  def reference_no(self):
-    kertoimet = (7, 3, 1)
-    viitenumero_raaka = str(self.num).replace(' ', '')
-    nrot_kaanteinen = map(int, viitenumero_raaka[::-1])
-    tulosumma = sum(kertoimet[i % 3] * x for i, x in enumerate(nrot_kaanteinen))
-    return str(viitenumero_raaka) + str((10 - (tulosumma % 10)) % 10)
-
-  def rf_reference_no(self):
-    reference_no = self.reference_no()
-    check = str(reference_no) + '271500'
-    check = int(check)
-    remainder = check % 97
-    checksum = 98 - remainder
-    checksum = str(checksum).zfill(2)
-    return 'RF' + checksum + str(reference_no)
-
-  def barcode(self):
-    import math
-    amount = self.amount()
-    euros = int(math.floor(amount))
-    cents = int((amount - euros) * 100)
-    reference = self.rf_reference_no()
-    reference = reference.replace('RF', '')
-    ref_added = 23 - len(reference)
-    if ref_added > 0:
-      reference = reference[:2] + '0'.zfill(ref_added) + reference[2:]
-    code = '5' + str(int("".join(self.iban[2:].split()))).zfill(16) + str(euros).zfill(6) + str(cents).zfill(2) + reference + date.today().strftime('%y%m%d')
-    sum = 0
-    for i in range(27):
-      if i == 0:
-        i = 1
-      sum = sum + int(code[i])*i
-    checksum = sum % 103
-
-    code = code + str(checksum)
-    return code
+    def amount(self):
+      sum = 0
+      lines = ExpenseLine.objects.filter(expense=self)
+      for line in lines:
+        sum+= line.sum()
+      return sum
+  
+    def c_approved(self):
+      e = ExpenseEvent.objects.filter(expense=self, type='C')
+      if e:
+        return e[0].date
+  
+    def admin_approved(self):
+      e = ExpenseEvent.objects.filter(expense=self, type='A')
+      if e:
+        return e[0].date
+  
+    def paid(self):
+      e = ExpenseEvent.objects.filter(expense=self, type='P')
+      if e:
+        return e[0].date
+  
+    def reference_no(self):
+      kertoimet = (7, 3, 1)
+      viitenumero_raaka = str(self.num).replace(' ', '')
+      nrot_kaanteinen = map(int, viitenumero_raaka[::-1])
+      tulosumma = sum(kertoimet[i % 3] * x for i, x in enumerate(nrot_kaanteinen))
+      return str(viitenumero_raaka) + str((10 - (tulosumma % 10)) % 10)
+  
+    def rf_reference_no(self):
+      reference_no = self.reference_no()
+      check = str(reference_no) + '271500'
+      check = int(check)
+      remainder = check % 97
+      checksum = 98 - remainder
+      checksum = str(checksum).zfill(2)
+      return 'RF' + checksum + str(reference_no)
+  
+    def barcode(self):
+      import math
+      amount = self.amount()
+      euros = int(math.floor(amount))
+      cents = int((amount - euros) * 100)
+      reference = self.rf_reference_no()
+      reference = reference.replace('RF', '')
+      ref_added = 23 - len(reference)
+      if ref_added > 0:
+        reference = reference[:2] + '0'.zfill(ref_added) + reference[2:]
+      code = '5' + str(int("".join(self.iban[2:].split()))).zfill(16) + str(euros).zfill(6) + str(cents).zfill(2) + reference + date.today().strftime('%y%m%d')
+      sum = 0
+      for i in range(27):
+        if i == 0:
+          i = 1
+        sum = sum + int(code[i])*i
+      checksum = sum % 103
+  
+      code = code + str(checksum)
+      return code
 
 def create_expense(sender, instance, created, **kwargs):
   if not instance.num or instance.num == '':

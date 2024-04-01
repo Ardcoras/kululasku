@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: yhrek
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django
+  namespace: yhrek
+  labels:
+    app: django
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30781
+  selector:
+    app: django
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: django-set
+  namespace: yhrek
+spec:
+  selector:
+    matchLabels:
+      app: django
+  serviceName: django
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+#    rollingUpdate:
+#      maxUnavailable: 0
+#      maxSurge: 1
+  template:
+    metadata:
+      namespace: yhrek
+      labels:
+        app: django
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - image: ghcr.io/ardcoras/yhrek:master
+          name: django
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 30781
+              name: django
+          volumeMounts:
+            - name: files
+              mountPath: /media/uploads/receipts/
+              subPath: receipts
+            - name: files
+              mountPath: /media/receipts/
+              subPath: receipts
+          env:
+            - name: ALLOWED_HOSTS_STRING
+              value: 'www.yhrek.fi'
+            - name: DEBUG
+              value: 'FAlse'
+            - name: CONTACT_NAME
+              value: 'Jyri-Petteri Paloposki'
+            - name: CONTACT_NUM
+              value: '+358503780711'
+            - name: MYSQL_USER
+              value: yhrek
+            - name: MYSQL_DATABASE
+              value: yhrek_prod
+            - name: MYSQL_HOST
+              value: wildgeese.ardcoras.fi
+            - name: MYSQL_PORT
+              value: '3306'
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql
+                  key: password
+            - name: SMTP_HOST
+              value: 'mail.ardcoras.fi'
+            - name: SMTP_PORT
+              value: '587'
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: smtp
+                  key: user
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smtp
+                  key: password
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hash-salt
+                  key: hash_salt
+#          readinessProbe:
+#            initialDelaySeconds: 1
+#            periodSeconds: 15
+#            timeoutSeconds: 5
+#            successThreshold: 2
+#            failureThreshold: 2
+#            httpGet:
+#              host:
+#              scheme: HTTP
+#              path: /
+#              httpHeaders:
+#              - name: Host
+#                value: yhrek.ardcoras.fi
+#              port: 80
+  volumeClaimTemplates:
+    - metadata:
+        name: files
+        namespace: yhrek
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: do-block-storage
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: django-route
+  namespace: yhrek
+spec:
+  entryPoints:
+    - websecure
+    - web
+  routes:
+    - match: Host(`www.yhrek.fi`)
+      kind: Rule
+      middlewares:
+        - name: headers-default@file
+      services:
+        - name: django
+          port: 80

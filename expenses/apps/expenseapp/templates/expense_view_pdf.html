@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html class="no-js" lang="fi">
 <head>
-{% load staticfiles %}
+{% load static %}
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>{% block title %}Yhrek{% endblock %}</title>
 
@@ -21,11 +21,41 @@
   label { font-weight: bold; margin-top: 2em; }
   table {  border-collapse: collapse; width: 100%; }
   table.layout td, table.layout th { border: none; }
-  td, th { border: 1px solid black; padding: 0.5em; }
-  p { min-height: 1em; border-left: 1px solid black; padding: 0.5em; }
+  th { border-bottom: 1px solid black; }
+  td, th { padding: 0.2em; }
+/*  p { min-height: 1em; border-left: 1px solid black; padding: 0.5em; } */
   tr.total td {
     font-weight: bold;
   }
+dl {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+dt {
+  font-weight: bold;  
+  width: 25%;
+  padding-top: 0.5em;  
+}
+dd {
+  display: flex;
+  margin: 0;
+  padding-top: 0.5em;
+}
+
+dd + dd {
+  width: 100%; 
+  padding-top: 0;  
+}
+dt + dd:not(:nth-child(2)),
+dt:first-child + dd:nth-child(2) {
+  width: 75%;
+}
+dd + dd::before {
+  width: 25%;
+  content: "";
+  padding-top: 0
+}
 </style>
 </head>
 

@@ -163,7 +163,7 @@ class ExpenseForm(ModelForm):
 
     class Meta:
         model = Expense
-        exclude = ('status', 'katre_status')
+        exclude = ('num', 'status', 'katre_status')
         # Prevent user from changing organisation or creator info. Hide memo field too
         widgets = {
             'organisation': forms.HiddenInput,
@@ -176,21 +176,21 @@ class ExpenseForm(ModelForm):
             'expenselines': ExpenseLineFormset,
         }
 
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    current_request = get_current_request()
-    r = re.compile(r'^/expense/new/(?P<organisation_id>\d+)$')
-
-    match = r.match(current_request.path)
-    if match == None:
-      messages.error(request, ugettext_lazy('Organisation ID was not found.'))
-      return HttpResponseRedirect(reverse('expense_new'))
-
-    orgid = int(match.groups()[0])
-    organisation = Organisation.objects.get(id=orgid)
-    workflows = Workflow.objects.filter(organisation=organisation)
-
-    self.fields["workflow"].queryset = workflows
+    def __init__(self, *args, **kwargs):
+      super().__init__(*args, **kwargs)
+      current_request = get_current_request()
+      r = re.compile(r'^/expense/new/(?P<organisation_id>\d+)$')
+  
+      match = r.match(current_request.path)
+      if match == None:
+        messages.error(request, ugettext_lazy('Organisation ID was not found.'))
+        return HttpResponseRedirect(reverse('expense_new'))
+  
+      orgid = int(match.groups()[0])
+      organisation = Organisation.objects.get(id=orgid)
+      workflows = Workflow.objects.filter(organisation=organisation)
+  
+      self.fields["workflow"].queryset = workflows
 
 class PersonForm(ModelForm):
     firstname = forms.CharField(label=gettext_lazy(

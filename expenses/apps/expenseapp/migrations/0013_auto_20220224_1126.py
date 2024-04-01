@@ -7,7 +7,7 @@ import expenseapp.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('expenseapp', '0009_merge_0008_auto_20200324_1133_0008_auto_20200324_1141'),
+        ('expenseapp', '0012_workflow_organisation'),
     ]
 
     operations = [

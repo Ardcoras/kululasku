@@ -70,7 +70,7 @@ def render_to_pdf(template_src, context_dict, additional=[]):
   html = HTML(string=html_string)
   form = io.BytesIO(html.write_pdf())
 
-  pdf = PyPDF2.PdfFileMerger(strict=False)
+  pdf = PyPDF2.PdfMerger(strict=False)
   pdf.append(form)
 
   for file in additional:

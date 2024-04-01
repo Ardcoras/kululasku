@@ -17,12 +17,7 @@ DEBUG = os.getenv('DEBUG') == 'True'
 ALLOWED_HOSTS = list(os.getenv('ALLOWED_HOSTS_STRING').split(','))
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-SENDGRID_API_KEY = api_key
-SENDGRID_SANDBOX_MODE_IN_DEBUG = False
-SENDGRID_TRACK_EMAIL_OPENS = False
-SENDGRID_TRACK_CLICKS_HTML = False
-SENDGRID_TRACK_CLICKS_PLAIN = False
-EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 TEMPLATE_DEBUG = DEBUG
 locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
 
@@ -261,3 +256,44 @@ except ImportError:
 
 #VAIHDA
 DEFAULT_FROM_EMAIL="no-reply@yhrek.fi"
+import locale, os
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': os.getenv('DB_NAME'),                      # Or path to database file if using sqlite3.
+        # The following settings are not used with sqlite3:
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'PORT': '3306'                   # Set to empty string for default.
+    }
+}
+
+SECRET_KEY=os.getenv('SECRET_KEY')
+
+EMAIL_HOST = os.getenv('SMTP_HOST')
+EMAIL_HOST_USER = os.getenv('SMTP_USER')
+EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD')
+EMAIL_PORT = os.getenv('SMTP_PORT')
+#EMAIL_USE_TLS = True
+locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
+
+#locale.setlocale(locale.LC_ALL, 'fi_FI')
+
+LOGGING = {
+  'version': 1,
+  'disable_existing_loggers': False,
+  'handlers': {
+    'null': {
+      'level': 'DEBUG',
+      'class': 'logging.NullHandler',
+    },
+  },
+  'loggers': {
+    'django.security.DisallowedHost': {
+      'handlers': ['null'],
+      'propagate': False,
+    },
+  },
+}
