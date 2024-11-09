@@ -90,7 +90,7 @@ def render_to_pdf(template_src, context_dict, additional=[]):
           tmp.close()
           os.unlink(tmp.name)
       else:
-        pdf.append(open(filename, 'rb'), import_bookmarks=False)
+        pdf.append(open(filename, 'rb'), import_outline=False)
 
   output = io.BytesIO()
   pdf.write(output)
