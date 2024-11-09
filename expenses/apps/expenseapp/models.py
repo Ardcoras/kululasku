@@ -582,6 +582,8 @@ class Expense(models.Model):
     def barcode(self):
       import math
       amount = self.amount()
+      if amount < 0:
+        return False
       euros = int(math.floor(amount))
       cents = int((amount - euros) * 100)
       reference = self.rf_reference_no()
