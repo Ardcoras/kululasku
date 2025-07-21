@@ -297,3 +297,5 @@ LOGGING = {
     },
   },
 }
+
+REGISTRATION_OPEN = False
