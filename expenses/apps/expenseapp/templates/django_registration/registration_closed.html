@@ -1,0 +1,7 @@
+{% extends "django_registration/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>{% trans "Registration closed" %}</h1>
+<p>{% blocktrans %}Self-registration has been closed due to spam issues. If you need an account, contact <a href="support@yhrek.fi">support@yhrek.fi</a>.{% endblocktrans %}</p>
+{% endblock %}
