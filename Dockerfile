@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update && apt-get -y upgrade
