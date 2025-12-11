@@ -4,7 +4,6 @@ import locale
 
 # Lähde: http://www.ohjelmointiputka.net/koodivinkit/26782-python-viitenumerolaskuri
 
-
 def viitenumeron_tarkiste(viitenumero_raaka):
     """palauta annetun tarkisteettoman viitenumeron perään kuuluva tarkistenumero"""
     kertoimet = (7, 3, 1)
