@@ -144,8 +144,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'crum.CurrentRequestUserMiddleware',
-    'django.middleware.common.BrokenLinkEmailsMiddleware'
+    'crum.CurrentRequestUserMiddleware'
+#    'django.middleware.common.BrokenLinkEmailsMiddleware'
 ]
 TEMPLATES = [
     {
