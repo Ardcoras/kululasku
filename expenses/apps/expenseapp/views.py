@@ -37,7 +37,7 @@ def language_activate(request, lang):
 @login_required()
 def receipt_fetch(request, expenselineid):
     expenseline = get_object_or_404(ExpenseLine, pk=expenselineid)
-    if not (expenseline.expense.user == request.user or request.user.has_perm('expenseapp.change_expense')):
+    if not (expenseline.expense.user == request.user or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expenseline.expense.workflow, users=request.user)):
         return redirect('/accounts/login/?next=%s' % request.path)
 
     response = HttpResponse()
