@@ -10,52 +10,98 @@
 {% endblock %}
 
 <style type="text/css">
-  * { font-family: sans-serif; }
-  label, h2, h3, h4, h5, h6, h7 {
-    text-decoration: underline;
+  @page {
+    size: A4;
+    margin: 2cm;
+    @bottom-right {
+      content: "Sivu " counter(page) " / " counter(pages);
+      font-size: 0.8em;
+    }
+  }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #333;
   }
   h1 {
+    font-size: 18pt;
     font-weight: bold;
-    font-size: 150%;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 5px;
   }
-  label { font-weight: bold; margin-top: 2em; }
-  table {  border-collapse: collapse; width: 100%; }
-  table.layout td, table.layout th { border: none; }
-  th { border-bottom: 1px solid black; }
-  td, th { padding: 0.2em; }
-/*  p { min-height: 1em; border-left: 1px solid black; padding: 0.5em; } */
+  h2, h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+  }
+  
+  /* Key-value pairs styling */
+  .info-grid {
+    display: table;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .info-row {
+    display: table-row;
+  }
+  .info-label {
+    display: table-cell;
+    font-weight: bold;
+    width: 25%;
+    padding: 4px 0;
+    vertical-align: top;
+    color: #555;
+  }
+  .info-value {
+    display: table-cell;
+    padding: 4px 0;
+    width: 75%;
+    vertical-align: top;
+  }
+
+  /* Table styling */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  th {
+    text-align: left;
+    background-color: #f0f0f0;
+    font-weight: bold;
+    padding: 8px;
+    border-bottom: 2px solid #333;
+  }
+  td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  .text-right {
+    text-align: right;
+  }
   tr.total td {
     font-weight: bold;
+    font-size: 1.1em;
+    border-top: 2px solid #333;
+    background-color: #f0f0f0;
   }
-dl {
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-}
-dt {
-  font-weight: bold;  
-  width: 25%;
-  padding-top: 0.5em;  
-}
-dd {
-  display: flex;
-  margin: 0;
-  padding-top: 0.5em;
-}
-
-dd + dd {
-  width: 100%; 
-  padding-top: 0;  
-}
-dt + dd:not(:nth-child(2)),
-dt:first-child + dd:nth-child(2) {
-  width: 75%;
-}
-dd + dd::before {
-  width: 25%;
-  content: "";
-  padding-top: 0
-}
+  
+  /* Helper classes */
+  .bar-code-note {
+    margin-top: 30px;
+    font-style: italic;
+    font-size: 0.9em;
+    color: #666;
+  }
 </style>
 </head>
 

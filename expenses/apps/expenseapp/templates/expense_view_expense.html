@@ -1,75 +1,93 @@
 {% load i18n %}
 {% load l10n %}
-  <h1>Kulukorvauslomake <span style="text-align: right; font-size: 60%;">{{ expense.num }}</span></h1>
-  <dl>
-    <dt>Organisaatio</dt>
-    <dd>{{ expense.organisation.name }}</dd>
+<h1>Kulukorvauslomake <span style="float: right; color: #777;">#{{ expense.num }}</span></h1>
 
-    <dt>Nimi</dt>
-    <dd>{{ expense.name }}</dd>
+<div class="info-grid">
+  <div class="info-row">
+    <div class="info-label">Organisaatio</div>
+    <div class="info-value">{{ expense.organisation.name }}</div>
+  </div>
+  <div class="info-row">
+    <div class="info-label">Nimi</div>
+    <div class="info-value">{{ expense.name }}</div>
+  </div>
+  <div class="info-row">
+    <div class="info-label">Sähköpostiosoite</div>
+    <div class="info-value">{{ expense.email }}</div>
+  </div>
+  <div class="info-row">
+    <div class="info-label">IBAN</div>
+    <div class="info-value">{{ expense.iban }}</div>
+  </div>
+  <div class="info-row">
+    <div class="info-label">SWIFT</div>
+    <div class="info-value">{{ expense.swift }}</div>
+  </div>
+  <div class="info-row">
+    <div class="info-label">Kuvaus</div>
+    <div class="info-value">{{ expense.description }}</div>
+  </div>
+  {% if expense.notes %}
+  <div class="info-row">
+    <div class="info-label">Huomautuksia</div>
+    <div class="info-value">{{ expense.notes }}</div>
+  </div>
+  {% endif %}
+  <div class="info-row">
+    <div class="info-label">Työkulku</div>
+    <div class="info-value">{{ expense.workflow.name }}</div>
+  </div>
+</div>
 
-    <dt>Sähköpostiosoite</dt>
-    <dd>{{ expense.email }}</dd>
-
-    <dt>IBAN</dt>
-    <dd>{{ expense.iban }}</dd>
-
-    <dt>SWIFT</dt>
-    <dd>{{ expense.swift }}</dd>
-
-    <dt>Kuvaus</dt>
-    <dd>{{ expense.description }}</dd>
-
-    <dt>Huomautuksia</dt>
-    <dd>{{ expense.notes }}</dd>
-
-    <dt>Työkulku</dt>
-    <dd>{{ expense.workflow.name }}</dd>
-  </dl>
-
-  <h3>Kuluerittely</h3>
-  <table>
-  <thead><tr>
-    <th>Kuvaus</th>
-    <th>Korvaustyyppi (kerroin)</th>
-    <th>Korvausperuste</th>
-    <th>Summa</th>
-  </tr></thead>
+<h3>Kuluerittely</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 40%">Kuvaus</th>
+      <th style="width: 25%">Korvaustyyppi (kerroin)</th>
+      <th style="width: 15%" class="text-right">Korvausperuste</th>
+      <th style="width: 20%" class="text-right">Summa</th>
+    </tr>
+  </thead>
   <tbody>
-  {% for expenseline in expenselines %}
-  <tr>
-    <td>{{ expenseline.description }}</td>
-    <td>{{ expenseline.expensetype_name }} ({{ expenseline.multiplier }} per)</td>
-    <td>{{ expenseline.basis }}</td>
-    <td>{{ expenseline.sum }}</td>
-  </tr>
-  {% endfor %}
-  <tr class="total">
-    <td colspan="3">Yhteensä</td>
-    <td>{{ expense.amount|localize }}</td>
-  </tr>
+    {% for expenseline in expenselines %}
+    <tr>
+      <td>{{ expenseline.description }}</td>
+      <td>{{ expenseline.expensetype_name }} ({{ expenseline.multiplier }})</td>
+      <td class="text-right">{{ expenseline.basis }}</td>
+      <td class="text-right">{{ expenseline.sum }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total">
+      <td colspan="3" class="text-right">Yhteensä</td>
+      <td class="text-right">{{ expense.amount|localize }}</td>
+    </tr>
   </tbody>
-  </table>
+</table>
 
-  <h3>Hyväksyminen</h3>
+<h3>Hyväksyminen</h3>
 
-  <table>
-  <thead><tr>
-    <th>Päiväys</th>
-    <th>Tyyppi</th>
-    <th>Lisätieto</th>
-    <th>Merkinnän tekijä</th>
-  </tr></thead>
+<table>
+  <thead>
+    <tr>
+      <th style="width: 20%">Päiväys</th>
+      <th style="width: 20%">Tyyppi</th>
+      <th style="width: 30%">Lisätieto</th>
+      <th style="width: 30%">Merkinnän tekijä</th>
+    </tr>
+  </thead>
   <tbody>
-  {% for expenseevent in expenseevents %}
-  <tr>
-    <td>{{ expenseevent.date|date:'j.n.Y' }}</td>
-    <td>{{ expenseevent.typename }}</td>
-    <td>{{ expenseevent.notes }}</td>
-    <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
-  </tr>
-  {% endfor %}
+    {% for expenseevent in expenseevents %}
+    <tr>
+      <td>{{ expenseevent.date|date:'j.n.Y' }}</td>
+      <td>{{ expenseevent.typename }}</td>
+      <td>{{ expenseevent.notes }}</td>
+      <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
+    </tr>
+    {% endfor %}
   </tbody>
-  </table>
+</table>
 
-<p>Voit maksaa kululaskun virtuaaliviivakoodilla {{ expense.barcode }}.</p>
+{% if expense.barcode %}
+<p class="bar-code-note">Voit maksaa kululaskun virtuaaliviivakoodilla:<br><strong>{{ expense.barcode }}</strong></p>
+{% endif %}
