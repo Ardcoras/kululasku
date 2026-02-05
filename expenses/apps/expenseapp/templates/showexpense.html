@@ -9,43 +9,69 @@
   <div class="pure-u-1 blue-bottom">
     <h2>{% trans 'Käsittelytiedot' %}</h2>
 
-  <table>
-  <thead><tr>
-    <th>Tyyppi</th>
-    <th>Päiväys</th>
-    <th>Lisätieto</th>
-    <th>Merkinnän tekijä</th>
-  </tr></thead>
-  <tbody>
-  {% for expenseevent in expenseevents %}
-  <tr>
-    <td>{{ expenseevent.typename }}</td>
-    <td>{{ expenseevent.date }}</td>
-    <td>{{ expenseevent.notes }}</td>
-    <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-  </table>
+    <table class="expense-table">
+      <thead>
+        <tr>
+          <th>Tyyppi</th>
+          <th>Päiväys</th>
+          <th>Lisätieto</th>
+          <th>Merkinnän tekijä</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for expenseevent in expenseevents %}
+        <tr>
+          <td>{{ expenseevent.typename }}</td>
+          <td>{{ expenseevent.date }}</td>
+          <td>{{ expenseevent.notes }}</td>
+          <td>{{ expenseevent.user.person }} ({{ expenseevent.user }})</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-<p>Voit maksaa kululaskun virtuaaliviivakoodilla {{ expense.barcode }}.</p>
-</div>
-<!-- </ul> -->
-{% endblock %}
-{% block localnav %}
-  <div class="btn-group">
-    <a href="{% url 'expense_view_pdf' expense.id %}" class="btn">PDF</a>
-    <div class="btn-group">
-      <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">Action
-        <span class="caret"></span>
+    {% if expense.barcode %}
+    <p class="bar-code-note">Voit maksaa kululaskun virtuaaliviivakoodilla <strong>{{ expense.barcode }}</strong>.</p>
+    {% endif %}
+  </div>
+  <!-- </ul> -->
+  {% endblock %}
+  {% block localnav %}
+  <div class="workflow-container" style="margin-bottom: 20px; padding: 10px 0;">
+    <div style="margin-bottom: 10px;">
+      <a href="{% url 'expense_view_pdf' expense.id %}" class="btn btn-primary">{% trans "Lataa PDF" %}</a>
+    </div>
+
+    <div class="workflow-stepper btn-group" role="group" aria-label="Workflow progress">
+      {% with status=completed_actions %}
+
+      <a href="{% url 'expense_addstep' expense_id=expense.id %}?action=R"
+        class="btn {% if 'R' in status %}btn-success{% else %}btn-secondary{% endif %}">
+        {% trans "Vastaanotettu" %} {% if 'R' in status %}✓{% endif %}
       </a>
-      <ul class="dropdown-menu">
-        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=R">Vastaanotettu</a></li>
-        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=C">Asiahyväksytty</a></li>
-        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=A">Hallinnollisesti hyväksytty</a></li>
-        <li><a href="{% url 'expense_addstep' expense_id=expense.id %}?action=P">Maksettu</a></li>
-      </ul>
+
+      <div class="btn-group-separator" style="width: 2px;"></div>
+
+      <a href="{% url 'expense_addstep' expense_id=expense.id %}?action=C"
+        class="btn {% if 'C' in status %}btn-success{% else %}btn-secondary{% endif %}">
+        {% trans "Asiahyväksytty" %} {% if 'C' in status %}✓{% endif %}
+      </a>
+
+      <div class="btn-group-separator" style="width: 2px;"></div>
+
+      <a href="{% url 'expense_addstep' expense_id=expense.id %}?action=A"
+        class="btn {% if 'A' in status %}btn-success{% else %}btn-secondary{% endif %}">
+        {% trans "Hallinnollisesti hyväksytty" %} {% if 'A' in status %}✓{% endif %}
+      </a>
+
+      <div class="btn-group-separator" style="width: 2px;"></div>
+
+      <a href="{% url 'expense_addstep' expense_id=expense.id %}?action=P"
+        class="btn {% if 'P' in status %}btn-success{% else %}btn-secondary{% endif %}">
+        {% trans "Maksettu" %} {% if 'P' in status %}✓{% endif %}
+      </a>
+
+      {% endwith %}
     </div>
   </div>
-{% endblock %}
-
+  {% endblock %}

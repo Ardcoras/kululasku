@@ -315,12 +315,18 @@ def showexpense(request, expense_id):
 
         lines.append(tmp)
 
+    events = ExpenseEvent.objects.filter(expense=expense)
+    completed_actions = set()
+    for event in events:
+        completed_actions.add(event.type)
+
     return render(request, 'showexpense.html', {
         'page_title': f'{_("Expense for")} {expense.organisation.name}',
         'expense': expense,
         'fields': fields,
         'lines': lines,
         'expenseevents': ExpenseEvent.objects.filter(expense=expense),
+        'completed_actions': completed_actions,
     })
 
 
