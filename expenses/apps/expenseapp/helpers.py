@@ -74,7 +74,7 @@ def render_to_pdf(template_src, context_dict, additional=[]):
 
   for file in additional:
     if file.name:
-      filename = file.url
+      filename = file.path
       if '.jpg' in file.name.lower() or '.png' in file.name.lower() or '.jpeg' in file.name.lower():
         tmp = tempfile.NamedTemporaryFile(delete=False)
         try:
