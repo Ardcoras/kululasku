@@ -4,7 +4,7 @@ from django.conf import settings
 import django.core.validators
 from django.db import migrations, models
 import django.db.models.deletion
-import django_iban.fields
+import localflavor.generic.models
 import expenseapp.models
 
 
@@ -34,8 +34,8 @@ class Migration(migrations.Migration):
                 ('cc_email', models.EmailField(blank=True, help_text='If entered, a notification about the expense application will be sent to this address without personal details except name.', max_length=254, null=True, validators=[django.core.validators.EmailValidator()], verbose_name='CC email address')),
                 ('phone', models.CharField(max_length=255, validators=[django.core.validators.RegexValidator('^\\+?[0-9]{7,13}', 'Enter a valid phone number without any spaces or dashes.')], verbose_name='Phone')),
                 ('address', models.CharField(max_length=255, validators=[django.core.validators.MinLengthValidator(5), django.core.validators.MaxLengthValidator(255)], verbose_name='Address')),
-                ('iban', django_iban.fields.IBANField(max_length=34)),
-                ('swift_bic', django_iban.fields.SWIFTBICField(blank=True, max_length=11, null=True, verbose_name='BIC no')),
+                ('iban', localflavor.generic.models.IBANField(max_length=34)),
+                ('swift_bic', localflavor.generic.models.BICField(blank=True, max_length=11, null=True, verbose_name='BIC no')),
                 ('personno', models.CharField(max_length=11, validators=[expenseapp.models.validate_hetu_or_businessid], verbose_name='Person number')),
                 ('description', models.CharField(max_length=255, verbose_name='Purpose')),
                 ('memo', models.TextField(help_text='Names of the additional passengers, people in the meeting etc.', verbose_name='Info')),
@@ -69,8 +69,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('phone', models.CharField(blank=True, max_length=255, null=True, validators=[django.core.validators.RegexValidator('^\\+?[0-9]{7,13}', 'Enter a valid phone number without any spaces or dashes.')], verbose_name='Phone')),
                 ('address', models.CharField(blank=True, max_length=255, null=True, validators=[django.core.validators.MinLengthValidator(5), django.core.validators.MaxLengthValidator(255)], verbose_name='Address')),
-                ('iban', django_iban.fields.IBANField(max_length=34)),
-                ('swift_bic', django_iban.fields.SWIFTBICField(blank=True, max_length=11, null=True, verbose_name='BIC no')),
+                ('iban', localflavor.generic.models.IBANField(max_length=34)),
+                ('swift_bic', localflavor.generic.models.BICField(blank=True, max_length=11, null=True, verbose_name='BIC no')),
                 ('personno', models.CharField(blank=True, help_text="Person number is required for every expense application for annual announcements to the tax authority. If you don't want to save it here, you can enter it to each expense application separately.", max_length=11, null=True, validators=[expenseapp.models.validate_hetu_or_businessid], verbose_name='Person number')),
                 ('type', models.IntegerField(choices=[(1, 'Trustee'), (2, 'Employee')], default=1, verbose_name='Type')),
                 ('language', models.CharField(blank=True, choices=[('fi-FI', 'Finnish'), ('sv-SE', 'Swedish'), ('en-EN', 'English')], max_length=6, null=True, verbose_name='Site language')),

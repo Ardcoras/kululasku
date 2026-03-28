@@ -68,7 +68,7 @@ class ExpenseLineForm(ModelForm):
                                     input_formats=('%H.%M',), required=False, widget=TimeInput(attrs={'placeholder': gettext_lazy('HH.MM'), 'class': 'hidden-start short-input ended_at_time'}))
     basis = BasisField(required=True,
                        widget=forms.TextInput(attrs={
-                                              'data-regexp': '^-?\d+([\,,\.](\d){1,2})?$', 'localization': True, 'data-parsley-maxlength': 1}),
+                                              'data-regexp': r'^-?\d+([\,,\.](\d){1,2})?$', 'localization': True, 'data-parsley-maxlength': 1}),
                        label=gettext_lazy('Amount'),
                        help_text=gettext_lazy(
                            'Amount of kilometres, days or the sum of the expense'),
@@ -183,7 +183,7 @@ class ExpenseForm(ModelForm):
   
       match = r.match(current_request.path)
       if match == None:
-        messages.error(request, ugettext_lazy('Organisation ID was not found.'))
+        messages.error(request, gettext_lazy('Organisation ID was not found.'))
         return HttpResponseRedirect(reverse('expense_new'))
   
       orgid = int(match.groups()[0])

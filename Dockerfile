@@ -1,8 +1,8 @@
-FROM python:3.11
+FROM python:3.12
 ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update && apt-get -y upgrade
-RUN apt-get install --fix-missing -y nginx net-tools gettext libxml2-dev libxslt-dev openssl python3-lxml
+RUN apt-get install --fix-missing -y nginx net-tools gettext libxml2-dev libxslt-dev openssl python3-lxml default-libmysqlclient-dev pkg-config
 
 RUN mkdir /code
 WORKDIR /code

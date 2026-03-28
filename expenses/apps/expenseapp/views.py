@@ -11,7 +11,7 @@ from collections import deque
 from django.urls import reverse
 from django.contrib import messages
 from os.path import basename
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 from expenseapp.helpers import cc_expense
 from datetime import datetime
 from .helpers import decimal_in_r82, render_to_pdf
@@ -41,7 +41,7 @@ def receipt_fetch(request, expenselineid):
         return redirect('/accounts/login/?next=%s' % request.path)
 
     response = HttpResponse()
-    response['Content-Disposition'] = 'attachment; filename=%s' % smart_text(
+    response['Content-Disposition'] = 'attachment; filename=%s' % smart_str(
         basename(expenseline.receipt.name))
     response['X-Accel-Redirect'] = expenseline.receipt.url
     return response
@@ -513,6 +513,10 @@ def annualarchive(request, organisation_id, year):
   organisation = get_object_or_404(Organisation, pk=organisation_id)
   expenses = Expense.objects.filter(organisation=organisation, created_at__year=year).order_by('personno')
 
+  return render(request, 'expense_list.html', {
+    'expenses': expenses,
+  })
+
 @login_required
 def annualreport(request, organisation_id, year):
     if not request.user.has_perm('expenseapp.change_organisation_' + str(organisation_id)):
@@ -565,13 +569,13 @@ def annualreport(request, organisation_id, year):
 154:%s
 155:%s
 156:%s
-048:kululasku.partio.fi
-014:2202642-0_KL
+048:yhrek.fi
+014:%s
 198:%s
 999:%s
 """
         output += format % (year, organisation.business_id, key.upper(), decimal_in_r82(
-            value['amount']), value['fpd'], value['ppd'], value['fopd'], value['ma'], int(value['km']), decimal_in_r82(value['kmamount']), timestamp, i)
+            value['amount']), value['fpd'], value['ppd'], value['fopd'], value['ma'], int(value['km']), decimal_in_r82(value['kmamount']), organisation.business_id + '_KL', timestamp, i)
         i = i+1
 
     # Output the organisation details
@@ -580,13 +584,13 @@ def annualreport(request, organisation_id, year):
 010:%s
 041:%s
 042:%s
-048:kululasku.partio.fi
-014:2202642-0_KL
+048:yhrek.fi
+014:%s
 198:%s
 999:%s
 """
     output += format % (year, organisation.business_id, request.user.last_name.upper() +
-                        ', ' + request.user.first_name.upper(), request.user.person.phone, timestamp, i)
+                        ', ' + request.user.first_name.upper(), request.user.person.phone, organisation.business_id + '_KL', timestamp, i)
 
     resp = HttpResponse(output, content_type="text/plain")
     resp['Content-Disposition'] = 'attachment; filename=annual_report_' + year + '.dat'
