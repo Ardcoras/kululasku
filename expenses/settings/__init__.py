@@ -39,21 +39,7 @@ ADMINS = (
 MANAGERS = ADMINS
 
 
-DATABASES = {
-    'default': {
-        # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'ENGINE': 'django.db.backends.postgresql',
-        # Or path to database file if using sqlite3.
-        'NAME': 'postgres',
-        # The following settings are not used with sqlite3:
-        'USER': 'postgres',
-        # 'PASSWORD': '',
-        # Docker-composesta viittaus
-        # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'HOST': 'db',
-        'PORT': '5432',                      # Set to empty string for default.
-    }
-}
+
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
@@ -141,6 +127,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -164,6 +151,7 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
+                'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
                 'expenseapp.context_processors.infobanner_processor.info_message'
             ],
@@ -171,17 +159,7 @@ TEMPLATES = [
     },
 ]
 
-MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'expenseapp.middleware.setlanguage.ExpenseAppSetLanguageMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
+
 
 ROOT_URLCONF = 'expenses.urls'
 
@@ -207,6 +185,8 @@ INSTALLED_APPS = (
     'django_registration',
     'django.contrib.flatpages',
 )
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ACCOUNT_ACTIVATION_DAYS = 14
 
@@ -258,17 +238,24 @@ except ImportError:
 DEFAULT_FROM_EMAIL="no-reply@yhrek.fi"
 import locale, os
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': os.getenv('MYSQL_NAME'),                      # Or path to database file if using sqlite3.
-        # The following settings are not used with sqlite3:
-        'USER': os.getenv('MYSQL_USER'),
-        'PASSWORD': os.getenv('MYSQL_PASSWORD'),
-        'HOST': os.getenv('MYSQL_HOST'),                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'PORT': '3306'                   # Set to empty string for default.
+if os.getenv('MYSQL_HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('MYSQL_NAME'),
+            'USER': os.getenv('MYSQL_USER'),
+            'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+            'HOST': os.getenv('MYSQL_HOST'),
+            'PORT': os.getenv('MYSQL_PORT', '3306'),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 SECRET_KEY=os.getenv('SECRET_KEY')
 

@@ -6,7 +6,6 @@ from django.core.validators import RegexValidator, MinLengthValidator, MaxLength
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.admin import DateFieldListFilter
-from django_registration.signals import user_registered
 from django.utils.translation import gettext_lazy
 from django.contrib.auth.models import Permission
 from django.db.models.signals import post_save
@@ -327,11 +326,12 @@ class Person(models.Model):
     class Meta:
         verbose_name_plural = "Henkilötiedot"  # 2 spaces
 
-def createPerson(sender, user, request, **kwargs):
-    Person.objects.get_or_create(user=user)
+def createPerson(sender, instance, created, **kwargs):
+    if created:
+        Person.objects.get_or_create(user=instance)
 
 
-user_registered.connect(createPerson)
+post_save.connect(createPerson, sender=User)
 
 
 class PersonAdmin(admin.ModelAdmin):
@@ -493,12 +493,7 @@ class Expense(models.Model):
     workflow = models.ForeignKey(Workflow, verbose_name='Työkulku', on_delete=models.CASCADE)
     num = models.CharField('Tositenumero', max_length=4)
 
-    def amount(self):
-        sum = 0
-        lines = ExpenseLine.objects.filter(expense=self)
-        for line in lines:
-            sum += line.sum()
-        return sum
+
 
     def accounts(self):
         lines = ExpenseLine.objects.filter(expense=self)
@@ -654,12 +649,12 @@ class ExpenseLine(models.Model):
     multiplier = models.DecimalField(gettext_lazy('Multiplier'), max_digits=10, decimal_places=2, help_text=gettext_lazy(
         'The per price for the expense type (mileage: € per km, other expenses: 1, advances: -1)'))
 
-    def save(self):
+    def save(self, *args, **kwargs):
         self.multiplier = self.expensetype.multiplier
         self.expensetype_type = self.expensetype.type
         self.expensetype_name = self.expensetype.name
 
-        super(ExpenseLine, self).save()
+        super(ExpenseLine, self).save(*args, **kwargs)
 
     def sum(self):
         return round(self.basis * self.expensetype.multiplier, 2)

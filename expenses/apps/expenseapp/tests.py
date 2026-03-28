@@ -1,20 +1,30 @@
+import tempfile
 from http import HTTPStatus
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 
-from .models import ExpenseType, Organisation, Person
+from .models import ExpenseType, Organisation, Person, Workflow
 
 
+FINNISH_IBAN = 'FI2112345600000785'
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class TestNewExpenseFormTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username='jacob.tester', email='jacob@partio.fi', password='top_secret', first_name='Jacob', last_name='Tester')
-        self.person = Person.objects.get_or_create(
-            user=self.user, type=1, address='Testitie 123', personno='010101-123N', iban='GB33BUKB20201555555555')
+        self.person = Person.objects.get(user=self.user)
+        self.person.type = 1
+        self.person.address = 'Testitie 123'
+        self.person.personno = '010101-123N'
+        self.person.iban = FINNISH_IBAN
+        self.person.save()
         self.organisation = Organisation.objects.create(
             name="Turun Hiihtäjät ry", business_id="y-1234", active=True, send_active=True)
+        self.workflow = Workflow.objects.create(name="Default Workflow", organisation=self.organisation)
 
     def test_fail_login(self):
         response = self.client.post(
@@ -116,17 +126,18 @@ class TestNewExpenseFormTests(TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
-            response, 'Kulukorvaus organisaatiolle'
+            response, 'Turun Hiihtäjät ry'
         )
         response = self.client.post(f"/expense/new/{self.organisation.id}", data={
             "preview": '0',
             "expenseform-user": self.user.id,
             "expenseform-organisation": self.organisation.id,
+            "expenseform-workflow": self.workflow.id,
             "expenseform-name": "Jacob Tester",
             "expenseform-email": "jacob.tester@test.com",
             "expenseform-phone": "044123456",
             "expenseform-address": "Esimerkkitie 123",
-            "expenseform-iban": "GB33BUKB20201555555555",
+            "expenseform-iban": FINNISH_IBAN,
             "expenseform-personno": "010101-123N",
             "expenseform-description": "description",
             "expenseform-memo": "memoteksti",
@@ -147,7 +158,8 @@ class TestNewExpenseFormTests(TestCase):
             "expenseform_EXPENSELINES-0-ended_at_time": "16.45",
             "expenseform_EXPENSELINES-0-expensetype_data": [expenseType]
         })
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        response = self.client.get(response.url)
         self.assertContains(
             response, 'Kulutiedot tallennettu.'
         )
@@ -173,19 +185,20 @@ class TestNewExpenseFormTests(TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertContains(
-            response, 'Kulukorvaus organisaatiolle'
+            response, 'Turun Hiihtäjät ry'
         )
         receipt = SimpleUploadedFile(
-            "file.jgp", b"file_content", content_type="image/jpg")
+            "file.jpg", b"file_content", content_type="image/jpeg")
         response = self.client.post(f"/expense/new/{self.organisation.id}", data={
             "preview": '0',
             "expenseform-user": self.user.id,
             "expenseform-organisation": self.organisation.id,
+            "expenseform-workflow": self.workflow.id,
             "expenseform-name": "Jacob Tester",
             "expenseform-email": "jacob.tester@test.com",
             "expenseform-phone": "044123456",
             "expenseform-address": "Esimerkkitie 123",
-            "expenseform-iban": "GB33BUKB20201555555555",
+            "expenseform-iban": FINNISH_IBAN,
             "expenseform-personno": "010101-123N",
             "expenseform-description": "description",
             "expenseform-memo": "memoteksti",
@@ -208,7 +221,8 @@ class TestNewExpenseFormTests(TestCase):
             "expenseform_EXPENSELINES-0-expensetype_data": [expenseType]
         })
 
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        response = self.client.get(response.url)
         self.assertContains(
             response, 'Kulutiedot tallennettu.'
         )
