@@ -450,6 +450,7 @@ class OrganisationAdmin(admin.ModelAdmin):
 
 
 APPLICATION_STATUSES = (
+    (-1, gettext_lazy('Draft')),
     (0, gettext_lazy('Open')),
     (1, gettext_lazy('Sent')),
 )
@@ -484,7 +485,7 @@ class Expense(models.Model):
         'Eg. Names of the additional passengers, people in the meeting, cost centre or activity sector.'), blank=True, null=True)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     status = models.IntegerField(gettext_lazy(
-        'Status'), choices=APPLICATION_STATUSES, default=0)
+        'Status'), choices=APPLICATION_STATUSES, default=-1)
     katre_status = models.IntegerField(gettext_lazy(
         'Katre status'), choices=KATRE_STATUSES, default=0)
 
@@ -637,7 +638,9 @@ class ExpenseLine(models.Model):
         'Cost centre'), blank=True, null=True, on_delete=models.PROTECT)
     basis = models.DecimalField(gettext_lazy('Amount'), max_digits=10, decimal_places=2, help_text=gettext_lazy(
         'Amount of kilometres, days or the sum of the expense'))
-    expense = models.ForeignKey(Expense, on_delete=models.PROTECT)
+    expense = models.ForeignKey(Expense, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
 
     receipt = models.FileField(gettext_lazy('Receipt'), upload_to='uploads/receipts', blank=True, null=True, validators=[validate_file_extension], help_text=gettext_lazy(
         'A scan or picture of the receipt. Accepted formats include PDF, PNG and JPG. Note: The receipt must clearly show what, when and how much has been paid!'))

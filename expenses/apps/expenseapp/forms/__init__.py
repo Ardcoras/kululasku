@@ -83,7 +83,7 @@ class ExpenseLineForm(ModelForm):
     class Meta:
         model = ExpenseLine
         exclude = ('expensetype_type', 'expensetype_name',
-                   'multiplier', 'accountdimension')
+                   'multiplier', 'accountdimension', 'user', 'organisation')
     field_order = ('expensetype', 'begin_at_date', 'begin_at_time',
                    'ended_at_date', 'ended_at_time', 'description', 'basis', 'receipt')
 

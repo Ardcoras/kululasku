@@ -140,6 +140,8 @@ class ModelForm(forms.ModelForm, metaclass=ModelFormMetaclass):
                             res = form.save(commit=False)
                             res.begin_at = begin_at
                             res.ended_at = ended_at
+                            res.user = instance.user
+                            res.organisation = instance.organisation
                             res.save()
                     fset.save()
         return instance
