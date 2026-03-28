@@ -700,15 +700,13 @@ class ExpenseEvent(models.Model):
 
 def create_expenseevent(sender, instance, created, **kwargs):
   if created:
-#    instance.user = current_user()
-    instance.user_id = 0
     if instance.type == 'P':
       send_mail(
         'Kululaskusi on maksettu',
         "Hei,\n\nKululaskusi " + str(instance.expense) + " on maksettu.\n\nTerveisin,\n-- \nYhrek.fi",
         'info@yhrek.fi',
         [instance.expense.email],
-        fail_silently=False,
+        fail_silently=True,
       )
 post_save.connect(create_expenseevent, sender=ExpenseEvent)
 

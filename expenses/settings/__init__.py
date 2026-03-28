@@ -15,6 +15,7 @@ api_key = os.getenv('SENDGRID_API_KEY')
 # Python vaatii tekstin converttauksen booleaniksi toimiakseen
 DEBUG = os.getenv('DEBUG') == 'True'
 ALLOWED_HOSTS = list(os.getenv('ALLOWED_HOSTS_STRING').split(','))
+CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS] + [f'http://{host}' for host in ALLOWED_HOSTS]
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
