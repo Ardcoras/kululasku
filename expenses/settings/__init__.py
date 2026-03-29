@@ -185,7 +185,19 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django_registration',
     'django.contrib.flatpages',
+    'rest_framework',
+    'rest_framework.authtoken',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ]
+}
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

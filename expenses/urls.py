@@ -7,6 +7,7 @@ admin.site.site_header = 'Kululasku palvelun ylläpito'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/', include('expenseapp.api.urls')),
     path('personinfo/', views.personinfo, name='personinfo'),
     path('i18n/<str:lang>', views.language_activate, name='language_activate'),
     path('organisation/<int:organisation_id>',
