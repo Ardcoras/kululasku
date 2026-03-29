@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="content" style="max-width: 900px; margin: 0 auto; padding: 2em;">
+    <h1 class="middle-headline">{% trans "Sailfish OS REST API Documentation" %}</h1>
+    <p>{% trans "This system exposes a set of authenticated REST API endpoints specifically crafted to synchronize Mobile Clients safely to the core Travel Expense processing engine." %}</p>
+    
+    <div class="alert alert-info">
+        <strong>{% trans "Base URL Context:" %}</strong> <code>/api/v1/</code>
+        <br>
+        <strong>{% trans "Authentication Protocol:" %}</strong> <code>Header: Authorization: Token &lt;api_token&gt;</code>
+    </div>
+
+    <hr>
+
+    <h2 class="sub-headline">1. Authentication</h2>
+    <p>{% trans "Generate a persistent session token using native Django Token validation." %}</p>
+    <table class="pure-table pure-table-bordered">
+        <thead><tr><th>Method</th><th>Endpoint</th><th>Payload Requirements</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>POST</strong></td>
+                <td><code>/api/v1/login/</code></td>
+                <td><code>{ "username": "user", "password": "..." }</code> (Forms/JSON)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2 class="sub-headline" style="margin-top: 2em;">2. System Configuration Maps</h2>
+    <p>{% trans "Fetch structural metadata securely tailored dynamically to the caller's Account Permissions and Rule definitions." %}</p>
+    <table class="pure-table pure-table-bordered">
+        <thead><tr><th>Method</th><th>Endpoint</th><th>Return Payload</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/organisations/</code></td>
+                <td>Array of targetable Active Organisations</td>
+            </tr>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/expensetypes/</code></td>
+                <td>Array of valid Expense Types (filtered explicitly based on calling Employee's Person type parameters logic)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2 class="sub-headline" style="margin-top: 2em;">3. Active Pool Manager</h2>
+    <p>{% trans "Process structural Unassigned floating Pool receipts straight from local hardware." %}</p>
+    <table class="pure-table pure-table-bordered">
+        <thead><tr><th>Method</th><th>Endpoint</th><th>Action Effect</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/pool/</code></td>
+                <td>Safely returns existing <code>ExpenseLine</code> items where <code>expense=null</code> tied specifically to caller's identity.</td>
+            </tr>
+            <tr>
+                <td><strong>POST</strong></td>
+                <td><code>/api/v1/pool/</code></td>
+                <td>Allows standard HTML form or Multipart uploads wrapping receipt images alongside Date/Type/Basis integers dynamically inserting them natively into the User's unassigned pool logic!</td>
+            </tr>
+            <tr>
+                <td><strong>DELETE</strong></td>
+                <td><code>/api/v1/pool/&lt;id&gt;/</code></td>
+                <td>Individually destroy an unassigned pool receipt entity safely before binding.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

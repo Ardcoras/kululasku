@@ -66,13 +66,126 @@ def organisationselection(request):
         start_date__lte=now, end_date__gte=now).first()
     if infoMessage:
         infoMessage = infoMessage.languaged(request.LANGUAGE_CODE)
+        
+    drafts = Expense.objects.filter(user=request.user, status=-1).order_by('-created_at')
 
     return render(request, 'organisationselection.html', {
         'page_title': _('Select your organisation to continue'),
         'organisations': orgs,
-        'info_message': infoMessage
+        'info_message': infoMessage,
+        'drafts': drafts,
     })
 
+@login_required()
+def pool_view(request):
+    lines = ExpenseLine.objects.filter(user=request.user, expense__isnull=True).order_by('-created_at')
+    drafts = Expense.objects.filter(user=request.user, status=-1).order_by('-created_at')
+    
+    return render(request, 'pool.html', {
+        'page_title': _('My Pool'),
+        'lines': lines,
+        'drafts': drafts
+    })
+
+@login_required()
+def pool_bundle_view(request):
+    if request.method == 'POST':
+        line_ids = request.POST.getlist('lines')
+        target_draft_id = request.POST.get('target_draft')
+        
+        lines = ExpenseLine.objects.filter(id__in=line_ids, user=request.user, expense__isnull=True)
+        if not lines.exists():
+            messages.error(request, _('No valid receipts selected.'))
+            return redirect('expense_pool')
+            
+        # Ensure all lines belong to the same organisation
+        org_id = lines.first().organisation_id
+        for line in lines:
+            if line.organisation_id != org_id:
+                messages.error(request, _('All bundled receipts must belong to the same organisation.'))
+                return redirect('expense_pool')
+                
+        if target_draft_id == 'new':
+            expense = Expense.objects.create(
+                user=request.user,
+                organisation_id=org_id,
+                status=-1,
+                name=request.user.person.name() if hasattr(request.user, 'person') else '',
+                email=request.user.email,
+            )
+        else:
+            expense = get_object_or_404(Expense, id=target_draft_id, user=request.user, status=-1)
+            if expense.organisation_id != org_id:
+                messages.error(request, _('The selected draft organisation does not match the receipts.'))
+                return redirect('expense_pool')
+                
+        lines.update(expense=expense)
+        messages.success(request, _('Receipts successfully moved to draft.'))
+        return redirect('expense_draft_edit', expense_id=expense.id)
+    return redirect('expense_pool')
+
+@login_required()
+def expense_draft_delete_view(request, expense_id):
+    if request.method == 'POST':
+        expense = get_object_or_404(Expense, id=expense_id, user=request.user, status=-1)
+        expense.delete()
+        messages.success(request, _('Draft discarded. Receipts have returned to your pool.'))
+        return redirect('expense_new')
+    return redirect('expense_new')
+
+@login_required()
+def expense_draft_edit(request, expense_id):
+    expense = get_object_or_404(Expense, id=expense_id, user=request.user, status=-1)
+    organisation = expense.organisation
+    
+    # Option B: Add From Pool Action
+    if request.method == 'POST' and 'add_pool_lines' in request.POST:
+        line_ids = request.POST.getlist('lines')
+        ExpenseLine.objects.filter(id__in=line_ids, user=request.user, expense__isnull=True, organisation=organisation).update(expense=expense)
+        messages.success(request, _('Lines added from pool.'))
+        return redirect('expense_draft_edit', expense_id=expense.id)
+        
+    # Submission Action (Lock the draft to Active)
+    if request.method == 'POST' and 'submit_draft' in request.POST:
+        expense.status = 0
+        expense.save()
+        
+        # We process the final fields from the user before locking
+        expense.name = request.POST.get('name', expense.name)
+        expense.email = request.POST.get('email', expense.email)
+        expense.phone = request.POST.get('phone', expense.phone)
+        expense.iban = request.POST.get('iban', expense.iban)
+        expense.swift_bic = request.POST.get('swift_bic', expense.swift_bic)
+        expense.description = request.POST.get('description', expense.description)
+        expense.save()
+        
+        # Trigger workflow notification similar to production pipeline
+        cc_expense(expense)
+        messages.success(request, _('Application submitted successfully.'))
+        return redirect('expense_view', expense_id=expense.id)
+
+    # Initial loading of the form fields to display
+    fields = OrderedDict()
+    fields['name'] = {'label': _('Applicant Name'), 'value': expense.name or request.user.person.name()}
+    fields['email'] = {'label': _('Email'), 'value': expense.email or request.user.email}
+    fields['phone'] = {'label': _('Phone'), 'value': expense.phone or request.user.person.phone}
+    fields['address'] = {'label': _('Address'), 'value': expense.address or request.user.person.address}
+    fields['iban'] = {'label': _('Bank account no'), 'value': expense.iban or request.user.person.iban}
+    fields['swift_bic'] = {'label': _('BIC no'), 'value': expense.swift_bic or request.user.person.swift_bic}
+    fields['personno'] = {'label': _('Person number'), 'value': expense.personno or request.user.person.personno}
+    fields['description'] = {'label': _('Description'), 'value': expense.description}
+    fields['date'] = {'label': _('Sent'), 'value': datetime.now()}
+    
+    pool_lines = ExpenseLine.objects.filter(user=request.user, expense__isnull=True, organisation=organisation).order_by('-created_at')
+
+    return render(request, 'draft_edit.html', {
+        'page_title': _('Editing Draft'),
+        'expense': expense,
+        'fields': fields,
+        'lines': expense.expenseline_set.all(),
+        'pool_lines': pool_lines,
+        'total_sum': sum([l.sum() for l in expense.expenseline_set.all()])
+    })
 
 @login_required()
 def ownexpenses(request):
