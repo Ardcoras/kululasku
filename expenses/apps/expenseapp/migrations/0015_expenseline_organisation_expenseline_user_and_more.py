@@ -82,7 +82,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='expenseline',
             name='expense',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='expenseapp.expense'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='expenseapp.expense'),
         ),
         migrations.AlterField(
             model_name='expenseline',

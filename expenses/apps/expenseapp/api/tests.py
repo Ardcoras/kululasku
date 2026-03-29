@@ -7,8 +7,22 @@ class APITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = User.objects.create_user(username='testapi', password='password123')
-        self.org = Organisation.objects.create(name='TestOrg', active=True)
-        self.et = ExpenseType.objects.create(name='Type1', type='K', active=True, organisation=self.org)
+        self.org = Organisation.objects.create(
+            name='TestOrg',
+            business_id='1234567-8',
+            active=True,
+            send_active=True,
+        )
+        self.et = ExpenseType.objects.create(
+            name='Type1',
+            type='O',
+            active=True,
+            persontype=self.user.person.type,
+            multiplier=1.0,
+            account='123',
+            unit='EUR',
+            organisation=self.org,
+        )
 
     def test_login_and_fetch_organisations(self):
         res = self.client.post('/api/v1/login/', {'username': 'testapi', 'password': 'password123'}, format='json')

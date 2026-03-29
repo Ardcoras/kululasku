@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, HttpResponseRedirect
 from .forms import ExpenseForm, PersonForm, OrganisationForm
-from .models import Expense, ExpenseLine, ExpenseType, InfoMessage, Organisation, Person, WorkflowStep, ExpenseEvent, TYPE_CHOICES
+from .models import Expense, ExpenseLine, ExpenseType, InfoMessage, Organisation, Person, Workflow, WorkflowStep, ExpenseEvent, TYPE_CHOICES
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
@@ -106,9 +106,15 @@ def pool_bundle_view(request):
                 return redirect('expense_pool')
                 
         if target_draft_id == 'new':
+            workflow = Workflow.objects.filter(organisation_id=org_id).first()
+            if not workflow:
+                messages.error(request, _('No workflow configured for this organisation. Please contact support.'))
+                return redirect('expense_pool')
+
             expense = Expense.objects.create(
                 user=request.user,
                 organisation_id=org_id,
+                workflow=workflow,
                 status=-1,
                 name=request.user.person.name() if hasattr(request.user, 'person') else '',
                 email=request.user.email,
@@ -128,6 +134,7 @@ def pool_bundle_view(request):
 def expense_draft_delete_view(request, expense_id):
     if request.method == 'POST':
         expense = get_object_or_404(Expense, id=expense_id, user=request.user, status=-1)
+        ExpenseLine.objects.filter(expense=expense).update(expense=None)
         expense.delete()
         messages.success(request, _('Draft discarded. Receipts have returned to your pool.'))
         return redirect('expense_new')
@@ -147,9 +154,6 @@ def expense_draft_edit(request, expense_id):
         
     # Submission Action (Lock the draft to Active)
     if request.method == 'POST' and 'submit_draft' in request.POST:
-        expense.status = 0
-        expense.save()
-        
         # We process the final fields from the user before locking
         expense.name = request.POST.get('name', expense.name)
         expense.email = request.POST.get('email', expense.email)
@@ -157,6 +161,7 @@ def expense_draft_edit(request, expense_id):
         expense.iban = request.POST.get('iban', expense.iban)
         expense.swift_bic = request.POST.get('swift_bic', expense.swift_bic)
         expense.description = request.POST.get('description', expense.description)
+        expense.status = 0
         expense.save()
         
         # Trigger workflow notification similar to production pipeline
@@ -368,6 +373,12 @@ def expense(request, organisation_id):
     # time.sleep(5)
     if expense_form.is_valid():
         expense = expense_form.save()
+        
+        # Safely pivot the Expense back into 'Open' (0) status routing so it doesn't get stuck in the Draft (-1) state forever
+        if expense.status == -1:
+            expense.status = 0
+            expense.save(update_fields=['status'])
+        
         # Send the email
         cc_expense(expense)
         messages.success(request, _('Expense information saved.'))

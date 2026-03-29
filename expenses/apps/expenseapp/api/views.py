@@ -8,7 +8,25 @@ class OrganisationViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Organisation.objects.filter(active=True).order_by('name')
+        organisations = Organisation.objects.filter(active=True).order_by('name')
+        org_ids = []
+
+        person = getattr(self.request.user, 'person', None)
+        person_type = getattr(person, 'type', None)
+
+        for organisation in organisations:
+            if person_type:
+                types = ExpenseType.objects.filter(
+                    organisation=organisation,
+                    persontype=person_type,
+                )
+            else:
+                types = ExpenseType.objects.filter(organisation=organisation)
+
+            if types.exists():
+                org_ids.append(organisation.id)
+
+        return organisations.filter(id__in=org_ids)
 
 class ExpenseTypeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ExpenseTypeSerializer

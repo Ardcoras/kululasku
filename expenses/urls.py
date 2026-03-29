@@ -1,15 +1,17 @@
 from django.urls import include, path
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 from expenseapp import views
 from django.contrib.flatpages import views as flatviews
+
 admin.site.site_header = 'Kululasku palvelun ylläpito'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('expenseapp.api.urls')),
-    path('api/docs/', TemplateView.as_view(template_name="api_docs.html"), name='api_docs'),
+    path('api/docs/', login_required(TemplateView.as_view(template_name="api_docs.html")), name='api_docs'),
     path('personinfo/', views.personinfo, name='personinfo'),
     path('i18n/<str:lang>', views.language_activate, name='language_activate'),
     path('organisation/<int:organisation_id>',
@@ -55,5 +57,5 @@ urlpatterns = [
     path('accounts/password/done/',
          auth_views.PasswordResetCompleteView.as_view(template_name='django_registration/password_reset_complete.html'), name='password_reset_complete'),
     path('', flatviews.flatpage, {'url': '/index/'}, name='index'),
-    path('', include('django.contrib.flatpages.urls'))
+    path('', include('django.contrib.flatpages.urls')),
 ]

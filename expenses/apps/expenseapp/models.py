@@ -638,7 +638,7 @@ class ExpenseLine(models.Model):
         'Cost centre'), blank=True, null=True, on_delete=models.PROTECT)
     basis = models.DecimalField(gettext_lazy('Amount'), max_digits=10, decimal_places=2, help_text=gettext_lazy(
         'Amount of kilometres, days or the sum of the expense'))
-    expense = models.ForeignKey(Expense, on_delete=models.SET_NULL, null=True, blank=True)
+    expense = models.ForeignKey(Expense, on_delete=models.PROTECT, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
 
@@ -656,6 +656,10 @@ class ExpenseLine(models.Model):
         self.multiplier = self.expensetype.multiplier
         self.expensetype_type = self.expensetype.type
         self.expensetype_name = self.expensetype.name
+
+        if self.expense_id:
+            self.user_id = self.expense.user_id
+            self.organisation_id = self.expense.organisation_id
 
         super(ExpenseLine, self).save(*args, **kwargs)
 
