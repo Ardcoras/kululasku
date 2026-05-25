@@ -1,0 +1,36 @@
+{% extends "django_registration/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1>{% trans "Activate account" %}</h1>
+
+{% if activation_error %}
+  <p class="error">
+    {% if activation_error.message %}
+      {{ activation_error.message }}
+    {% else %}
+      {% trans "Account activation failed." %}
+    {% endif %}
+  </p>
+{% endif %}
+
+<form action="{% url 'django_registration_activate' %}" method="POST" class="pure-form pure-form-aligned" data-parsley-validate>
+  {% csrf_token %}
+
+  {% if form.activation_key.value %}
+    <input type="hidden" name="{{ form.activation_key.html_name }}" value="{{ form.activation_key.value }}">
+  {% else %}
+    <div class="pure-control-group{% if form.activation_key.field.required %} required{% endif %}{% if form.activation_key.errors %} error{% endif %}">
+      {{ form.activation_key.label_tag }}
+      {{ form.activation_key }}
+      {{ form.activation_key.errors }}
+    </div>
+  {% endif %}
+
+  <div class="pure-controls">
+    <span class="submit-button-wrapper">
+      <button type="submit" class="pure-button pure-button-primary">{% trans "Activate account" %}</button>
+    </span>
+  </div>
+</form>
+{% endblock %}
