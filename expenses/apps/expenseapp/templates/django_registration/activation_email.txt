@@ -1,8 +1,8 @@
-{% load i18n %}{% blocktrans with activation_key=activation_key %}Hi!
+{% load i18n %}{% blocktrans with activation_key=activation_key|urlencode %}Hi!
 
 Thank you for registering for the system. Visit this link to confirm your email address and activate your account:
 
-https://www.yhrek.fi/accounts/activate/{{ activation_key }}/
+https://www.yhrek.fi/accounts/activate/?activation_key={{ activation_key }}
 
 If you didn't request the account, DO NOT click on the link. If you have any questions or concerns, please contact info@yhrek.fi
 
