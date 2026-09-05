@@ -12,6 +12,7 @@ __pycache__
 .DS_Store
 *.DS_Store
 *.pyc
+*.mo
 sendgrid.env
 staticfiles/*
 .vscode/*

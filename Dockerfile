@@ -26,6 +26,7 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf
 ADD requirements.txt /code/
 RUN pip install -r requirements.txt
 ADD . /code
+RUN cd /code/expenses/apps/expenseapp && django-admin compilemessages --use-fuzzy
 
 EXPOSE 8000
 COPY ./run.sh /
