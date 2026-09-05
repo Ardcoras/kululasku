@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: Kululasku\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-05 10:58+0000\n"
-"PO-Revision-Date: 2026-09-05 14:15+0300\n"
+"PO-Revision-Date: 2026-09-05 14:46+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: sv_FI\n"
@@ -85,7 +85,7 @@ msgstr "Organisationsuppgifter har ej hittats."
 #| msgid "Please choose smaller file. Size limit is %s and your file is %s"
 msgid ""
 "Please choose smaller file. Size limit is %(limit)s and your file is %(size)s"
-msgstr "Välj mindre fil. Storleksgräns är% s och din fil är% s"
+msgstr "Välj mindre fil. Storleksgräns är %(limit)s och din fil är %(size)s"
 
 #: forms/__init__.py:135
 #, fuzzy
