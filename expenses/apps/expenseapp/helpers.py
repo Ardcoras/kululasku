@@ -61,6 +61,43 @@ import PyPDF2
 from django.template.loader import render_to_string
 from PIL import Image
 import tempfile
+import logging
+
+logger = logging.getLogger(__name__)
+
+PDF_EXTENSIONS = ('.pdf',)
+IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif', '.heic')
+
+
+def receipt_file_type(file):
+  name = file.name.lower()
+  if not getattr(file, 'path', None) or not os.path.exists(file.path):
+    return None
+
+  if name.endswith(PDF_EXTENSIONS):
+    try:
+      with open(file.path, 'rb') as handle:
+        if handle.read(5) != b'%PDF-':
+          return None
+        handle.seek(0)
+        reader = PyPDF2.PdfReader(handle, strict=False)
+        if len(reader.pages) == 0:
+          return None
+      return 'pdf'
+    except Exception:
+      logger.warning('Skipping invalid PDF receipt: %s', file.name, exc_info=True)
+      return None
+
+  if name.endswith(IMAGE_EXTENSIONS):
+    try:
+      with Image.open(file.path) as image:
+        image.verify()
+      return 'image'
+    except Exception:
+      logger.warning('Skipping invalid image receipt: %s', file.name, exc_info=True)
+      return None
+
+  return None
 
 def render_to_pdf(template_src, context_dict, additional=[]):
   from weasyprint import HTML
@@ -75,22 +112,28 @@ def render_to_pdf(template_src, context_dict, additional=[]):
 
   for file in additional:
     if file.name:
+      file_type = receipt_file_type(file)
+      if not file_type:
+        continue
+
       filename = file.path
-      if '.jpg' in file.name.lower() or '.png' in file.name.lower() or '.jpeg' in file.name.lower():
+      if file_type == 'image':
         tmp = tempfile.NamedTemporaryFile(delete=False)
         try:
-          im = Image.open(filename)
-          if im.mode == 'RGBA':
-            im = im.convert('RGB')
+          with Image.open(filename) as im:
+            if im.mode in ('RGBA', 'P'):
+              im = im.convert('RGB')
 #          filename = filename.replace('.jpg', '.pdf').replace('.png', '.pdf')
 #          im.save(filename, "PDF", resolution=200.0)
-          im.save(tmp.name, "PDF", resolution=200.0)
-          pdf.append(open(tmp.name, 'rb'))
+            im.save(tmp.name, "PDF", resolution=200.0)
+          with open(tmp.name, 'rb') as receipt_pdf:
+            pdf.append(receipt_pdf)
         finally:
           tmp.close()
           os.unlink(tmp.name)
       else:
-        pdf.append(open(filename, 'rb'), import_outline=False)
+        with open(filename, 'rb') as receipt_pdf:
+          pdf.append(receipt_pdf, import_outline=False)
 
   output = io.BytesIO()
   pdf.write(output)

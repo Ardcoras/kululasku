@@ -14,6 +14,23 @@ from expenseapp.forms import inline_snippet
 from expenseapp.models import Expense, ExpenseLine, ExpenseType, Person, Organisation, User, Workflow
 
 
+def use_organisation_workflows(form, organisation):
+    workflows = Workflow.objects.filter(organisation=organisation)
+    workflow_count = workflows.count()
+    form.fields["workflow"].queryset = workflows
+
+    if workflow_count == 1:
+        workflow = workflows.first()
+        form.fields["workflow"].initial = workflow.pk
+        form.fields["workflow"].empty_label = None
+
+        workflow_field_name = form.add_prefix("workflow")
+        if form.is_bound and not form.data.get(workflow_field_name):
+            data = form.data.copy()
+            data[workflow_field_name] = str(workflow.pk)
+            form.data = data
+
+
 class ModelForm(inline_snippet.ModelForm):
     def __new__(cls, *args, **kwargs):
         new_class = super(ModelForm, cls).__new__(cls)
@@ -191,9 +208,7 @@ class ExpenseForm(ModelForm):
   
       orgid = int(match.groups()[0])
       organisation = Organisation.objects.get(id=orgid)
-      workflows = Workflow.objects.filter(organisation=organisation)
-  
-      self.fields["workflow"].queryset = workflows
+      use_organisation_workflows(self, organisation)
       self.fields["name"].label = gettext_lazy('Applicant Name')
 
 
@@ -210,7 +225,7 @@ class ExpenseDraftForm(ModelForm):
         organisation = kwargs.pop('organisation', None)
         super().__init__(*args, **kwargs)
         if organisation:
-            self.fields["workflow"].queryset = Workflow.objects.filter(organisation=organisation)
+            use_organisation_workflows(self, organisation)
         self.fields["name"].label = gettext_lazy('Applicant Name')
 
 

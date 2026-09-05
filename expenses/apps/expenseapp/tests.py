@@ -1,7 +1,10 @@
 import tempfile
-from io import StringIO
+import types
+from io import BytesIO, StringIO
 from datetime import timezone as datetime_timezone
 from http import HTTPStatus
+from unittest.mock import patch
+import PyPDF2
 from django.test import TestCase, override_settings
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Permission
@@ -11,6 +14,7 @@ from django.utils import timezone
 
 
 from .models import Expense, ExpenseEvent, ExpenseLine, ExpenseType, Organisation, Person, Workflow, WorkflowStep
+from .helpers import render_to_pdf
 
 
 FINNISH_IBAN = 'FI2112345600000785'
@@ -232,6 +236,13 @@ class TestNewExpenseFormTests(TestCase):
         data.update(overrides)
         return data
 
+    def _valid_pdf_bytes(self):
+        output = BytesIO()
+        writer = PyPDF2.PdfWriter()
+        writer.add_blank_page(width=72, height=72)
+        writer.write(output)
+        return output.getvalue()
+
     def test_pool_bundle_rejects_mixed_organisations(self):
         self.client.login(username='jacob.tester', password='top_secret')
 
@@ -280,6 +291,44 @@ class TestNewExpenseFormTests(TestCase):
         self.assertFalse(ExpenseEvent.objects.filter(expense=draft).exists())
         self.assertEqual(ExpenseLine.objects.filter(expense=draft).count(), 2)
         self.assertIn(f'/expense/draft/{draft.id}/', response.url)
+
+    def test_user_create_expense_autoselects_only_workflow_when_missing(self):
+        expenseType = self._create_expensetype(self.organisation)
+
+        self.client.login(username='jacob.tester', password='top_secret')
+        response = self.client.post(f"/expense/new/{self.organisation.id}", data={
+            "preview": '0',
+            "expenseform-user": self.user.id,
+            "expenseform-organisation": self.organisation.id,
+            "expenseform-name": "Jacob Tester",
+            "expenseform-email": "jacob.tester@test.com",
+            "expenseform-phone": "044123456",
+            "expenseform-address": "Esimerkkitie 123",
+            "expenseform-iban": FINNISH_IBAN,
+            "expenseform-personno": "010101-123N",
+            "expenseform-description": "description",
+            "expenseform-memo": "memoteksti",
+            "expenseform_EXPENSELINES-TOTAL_FORMS": 1,
+            "expenseform_EXPENSELINES-INITIAL_FORMS": 0,
+            "expenseform_EXPENSELINES-MIN_NUM_FORMS": 1,
+            "expenseform_EXPENSELINES-MAX_NUM_FORMS": 1000,
+            "expenseform_EXPENSELINES-0-basis": 100,
+            "expenseform_EXPENSELINES-0-description": "Drove from Turku to Helsinki",
+            "expenseform_EXPENSELINES-0-expensetype": expenseType.id,
+            "expenseform_EXPENSELINES-__prefix__-expensetype": expenseType.id,
+            "expenseform_EXPENSELINES-0-sum": expenseType.multiplier * 100,
+            "expenseform_EXPENSELINES-0-begin_at_date": "31.1.2022",
+            "expenseform_EXPENSELINES-0-begin_at": "31.1.2022",
+            "expenseform_EXPENSELINES-0-begin_at_time": "12.45",
+            "expenseform_EXPENSELINES-0-ended_at_date": "2.2.2022",
+            "expenseform_EXPENSELINES-0-ended_at": "2.2.2022",
+            "expenseform_EXPENSELINES-0-ended_at_time": "16.45",
+            "expenseform_EXPENSELINES-0-expensetype_data": [expenseType]
+        })
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        created = Expense.objects.get(description='description')
+        self.assertEqual(created.workflow_id, self.workflow.id)
 
     def test_pool_bundle_does_not_reuse_already_claimed_lines(self):
         self.client.login(username='jacob.tester', password='top_secret')
@@ -536,6 +585,37 @@ class TestNewExpenseFormTests(TestCase):
         self.assertEqual(event.notes, 'Created from pre-submitted entries')
         self.assertFalse(ExpenseEvent.objects.filter(expense=draft, type='E').exists())
 
+    def test_draft_submit_autoselects_only_workflow_when_missing(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+        )
+        line.expense = draft
+        line.save()
+
+        data = self._valid_draft_submit_data()
+        data.pop('workflow')
+        response = self.client.post(f'/expense/draft/{draft.id}/', data=data)
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, 0)
+        self.assertEqual(draft.workflow_id, self.workflow.id)
+
     def test_draft_submit_allows_omitted_optional_nullable_fields(self):
         self.client.login(username='jacob.tester', password='top_secret')
 
@@ -741,6 +821,35 @@ class TestNewExpenseFormTests(TestCase):
         content = response.content.decode()
         self.assertIn('010101-123N', content)
         self.assertNotIn('020202A1234', content)
+
+    def test_pdf_generation_skips_receipt_with_unexpected_pdf_content(self):
+        et = self._create_expensetype(self.organisation)
+        expense = self._create_expense('Submitted PDF expense', status=0)
+        line = ExpenseLine.objects.create(
+            description='Bad receipt line',
+            begin_at=timezone.now(),
+            basis=10,
+            expensetype=et,
+            expense=expense,
+            user=self.user,
+            organisation=self.organisation,
+        )
+        line.receipt = SimpleUploadedFile('receipt.pdf', b'not a real pdf', content_type='application/pdf')
+        line.save()
+
+        fake_weasyprint = types.SimpleNamespace(
+            HTML=lambda string: types.SimpleNamespace(write_pdf=lambda: self._valid_pdf_bytes())
+        )
+        with patch.dict('sys.modules', {'weasyprint': fake_weasyprint}):
+            response = render_to_pdf(
+                'expense_view_pdf.html',
+                {'expense': expense, 'expenselines': [line], 'expenseevents': []},
+                [line.receipt],
+            )
+
+        pdf = PyPDF2.PdfReader(BytesIO(response.content), strict=False)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertEqual(len(pdf.pages), 1)
 
     def test_user_create_expense_with_a_file(self):
         expenseType = ExpenseType.objects.create(
