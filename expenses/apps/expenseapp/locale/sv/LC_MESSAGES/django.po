@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Kululasku\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-06 21:32+0000\n"
-"PO-Revision-Date: 2016-05-03 14:01+0200\n"
+"POT-Creation-Date: 2026-09-05 10:58+0000\n"
+"PO-Revision-Date: 2026-09-05 14:15+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: sv_FI\n"
@@ -50,20 +50,25 @@ msgstr "Avslutas"
 msgid "Ended at time"
 msgstr "Avslutas"
 
-#: forms/__init__.py:72 models.py:524 views.py:229 views.py:307
+#: forms/__init__.py:72 models.py:657 templates/draft_edit.html:31
+#: templates/draft_edit.html:106 templates/pool.html:33
+#: templates/showexpensedata.html:78 views.py:394 views.py:473
 msgid "Amount"
 msgstr "Summa"
 
-#: forms/__init__.py:74 models.py:525
+#: forms/__init__.py:74 models.py:658
 msgid "Amount of kilometres, days or the sum of the expense"
 msgstr "Antal kilometrar, dagar eller totala utgifterna"
 
-#: forms/__init__.py:79 models.py:514 views.py:141 views.py:227 views.py:292
-#: views.py:306
+#: forms/__init__.py:79 models.py:647 templates/api_docs.html:16
+#: templates/api_docs.html:41 templates/api_docs.html:102
+#: templates/draft_edit.html:29 templates/draft_edit.html:105
+#: templates/pool.html:31 templates/showexpensedata.html:75 views.py:306
+#: views.py:392 views.py:458 views.py:472
 msgid "Description"
 msgstr "Beskrivning"
 
-#: forms/__init__.py:81 models.py:515
+#: forms/__init__.py:81 models.py:648
 msgid ""
 "Description of the expense, eg. the route of the journey (travel expenses) "
 "or purpose of the purchased goods"
@@ -71,191 +76,197 @@ msgstr ""
 "Beskrivning av omkostnad, t.ex. Reserutt (för reseräkning) eller ändamål med "
 "införskaffad vara"
 
-#: forms/__init__.py:98
+#: forms/__init__.py:98 forms/__init__.py:189
 msgid "Organisation ID was not found."
 msgstr "Organisationsuppgifter har ej hittats."
 
-#: forms/__init__.py:128
-#, python-format
-msgid "Please choose smaller file. Size limit is %s and your file is %s"
+#: forms/__init__.py:129
+#, fuzzy, python-format
+#| msgid "Please choose smaller file. Size limit is %s and your file is %s"
+msgid ""
+"Please choose smaller file. Size limit is %(limit)s and your file is %(size)s"
 msgstr "Välj mindre fil. Storleksgräns är% s och din fil är% s"
 
-#: forms/__init__.py:132
+#: forms/__init__.py:135
 #, fuzzy
 #| msgid "This expense type requires an ending time!"
 msgid "This expense type requires an ending date!"
 msgstr "Denna typ av omkostnad kräver avslutningstid!"
 
-#: forms/__init__.py:136
+#: forms/__init__.py:139
 msgid "This expense type requires an ending time!"
 msgstr "Denna typ av omkostnad kräver avslutningstid!"
 
-#: forms/__init__.py:140
+#: forms/__init__.py:143
 #, fuzzy
 #| msgid "This expense type requires an ending time!"
 msgid "This expense type requires a beginning date!"
 msgstr "Denna typ av omkostnad kräver avslutningstid!"
 
-#: forms/__init__.py:144
+#: forms/__init__.py:147
 #, fuzzy
 #| msgid "This expense type requires an ending time!"
 msgid "This expense type requires a beginning time!"
 msgstr "Denna typ av omkostnad kräver avslutningstid!"
 
-#: forms/__init__.py:148
+#: forms/__init__.py:151
 msgid "This expense type requires a receipt!"
 msgstr "Denna typ av omkostnad kräver kvitto!"
 
-#: forms/__init__.py:159
+#: forms/__init__.py:162 forms/__init__.py:201
 #, fuzzy
 #| msgid "Email"
 msgid "CC Email"
 msgstr "CC-E-post"
 
-#: forms/__init__.py:160
+#: forms/__init__.py:163 forms/__init__.py:202
 msgid "Copy of expense will be sent to the email."
 msgstr "Kopia av utgifterna skickas till e-postmeddelandet."
 
-#: forms/__init__.py:182
+#: forms/__init__.py:197 forms/__init__.py:214 views.py:292
+msgid "Applicant Name"
+msgstr "Namn"
+
+#: forms/__init__.py:219
 msgid "First name"
 msgstr "Förnamn"
 
-#: forms/__init__.py:184
+#: forms/__init__.py:221
 msgid "Last name"
 msgstr "Efternamn"
 
-#: forms/__init__.py:186 views.py:129 views.py:284
+#: forms/__init__.py:223 views.py:294 views.py:449
 msgid "Email"
 msgstr "E-post"
 
-#: forms/__init__.py:191
+#: forms/__init__.py:228
 msgid "Email already exists"
 msgstr "E-postadress upptagen"
 
-#: forms/__init__.py:205 models.py:343 models.py:535
+#: forms/__init__.py:242 models.py:378 models.py:670
 msgid "Multiplier"
 msgstr "Koefficient"
 
-#: helpers.py:32
+#: helpers.py:31
 msgid "Date\t\tType\t\tAmount\n"
 msgstr "Datum\t\tTyp\t\tMängd\n"
 
-#: helpers.py:54
+#: helpers.py:53
 msgid "New expense CC'd to you"
 msgstr "En kopia av en omkostnadsredovisning är sänd till dig"
 
-#: models.py:30 models.py:78
+#: models.py:42 models.py:89
 msgid "Enter a valid Finnish personal identity code."
 msgstr "Fyll i ett giltigt finskt socialskyddsnummer."
 
-#: models.py:35 models.py:62 models.py:72
+#: models.py:47 models.py:74 models.py:84
 msgid "Enter a valid Finnish personal identity code or Finnish business ID."
 msgstr "Fyll i ett giltigt finskt socialskyddsnummer eller FO-nummer."
 
-#: models.py:45
+#: models.py:57
 msgid ""
-"Supported image formats are PDF, JPG, PNG or HEIC formats. If you have a ."
-"docx file, print to PDF."
+"Supported image formats are PDF, JPG, PNG or HEIC formats. If you have "
+"a .docx file, print to PDF."
 msgstr ""
 "Bildformat som stöds är PDF, JPG, PNG eller HEIC. Om du bearbetar en .doc-"
 "fil, spara den som en PDF."
 
-#: models.py:83
+#: models.py:94
 msgid "Enter a valid Finnish business ID."
 msgstr "Fyll i ett gällande finsk FO-nummer."
 
-#: models.py:95
+#: models.py:106
 msgid "Enter a valid phone number without any spaces or dashes."
 msgstr "Fyll i ett gällande telefonnummer utan mellanslag eller -sträck. "
 
-#: models.py:102
+#: models.py:113
 msgid "Enter your first and last name."
 msgstr "Fyll i ditt för- och efternamn."
 
-#: models.py:113
+#: models.py:123
 msgid "Selite"
 msgstr ""
 
-#: models.py:123
+#: models.py:133
 msgid "Näkyvissä alkaen"
 msgstr ""
 
-#: models.py:125
+#: models.py:135
 msgid "Päättyy"
 msgstr ""
 
-#: models.py:126 models.py:419 models.py:425 models.py:456 views.py:144
-#: views.py:294
+#: models.py:136 models.py:455 models.py:461 models.py:492 views.py:309
+#: views.py:460
 msgid "Sent"
 msgstr "Sänd"
 
-#: models.py:127 models.py:457
+#: models.py:137 models.py:493
 msgid "Edited"
 msgstr "Ändrad"
 
-#: models.py:207 models.py:242 models.py:337 models.py:431 models.py:532
-#: views.py:283
+#: models.py:217 models.py:252 models.py:372 models.py:467 models.py:667
+#: views.py:448
 msgid "Name"
 msgstr "Namn"
 
-#: models.py:209
+#: models.py:219
 msgid "Business ID"
 msgstr "FO-nummer"
 
-#: models.py:211
+#: models.py:221
 msgid "EmCe yritystunnus"
 msgstr ""
 
-#: models.py:213
+#: models.py:223
 msgid "Katre-varmenteen Y-tunnus"
 msgstr ""
 
-#: models.py:214
+#: models.py:224
 msgid "Selectable"
 msgstr "Valbar"
 
-#: models.py:215
+#: models.py:225
 msgid "Send active"
 msgstr "Aktiva skickas"
 
-#: models.py:243
+#: models.py:253
 msgid "Account dimension code"
 msgstr "Kod för kostnadsstället"
 
-#: models.py:244
+#: models.py:254
 msgid "Account dimension code(s). If multiple, separate with semicolons (;)."
 msgstr ""
 "Kod(er) för kostnadsställe(n). Ifall flera, särskilj dem med semikolon (;)."
 
-#: models.py:264
+#: models.py:273
 msgid "Trustee"
 msgstr "Förtroendevald"
 
-#: models.py:265
+#: models.py:274
 msgid "Employee"
 msgstr "Anställd"
 
-#: models.py:273 models.py:437 views.py:131 views.py:285
+#: models.py:305 models.py:473 views.py:296 views.py:450
 msgid "Phone"
 msgstr "Telefon"
 
-#: models.py:275 models.py:439 views.py:133 views.py:286
+#: models.py:307 models.py:475 views.py:298 views.py:451
 msgid "Address"
 msgstr "Adress och postdistrikt"
 
-#: models.py:276 models.py:440 views.py:135 views.py:287
+#: models.py:308 models.py:476 views.py:300 views.py:452
 msgid "Bank account no"
 msgstr "Kontonummer"
 
-#: models.py:277 models.py:441 views.py:137 views.py:288
+#: models.py:309 models.py:477 views.py:302 views.py:453
 msgid "BIC no"
 msgstr "BIC kod"
 
-#: models.py:278 models.py:442 views.py:139 views.py:290
+#: models.py:310 models.py:478 views.py:304 views.py:455
 msgid "Person number"
 msgstr "Personnummer"
 
-#: models.py:279
+#: models.py:311
 msgid ""
 "Person number is required for every expense application for annual "
 "announcements to the tax authority. If you don't want to save it here, you "
@@ -265,63 +276,64 @@ msgstr ""
 "årsanmälan. Om du inte vill spara uppgiften i din profil, kan du i varje "
 "kostnadsredovisning mata in personbeteckningen separat."
 
-#: models.py:281 models.py:340 models.py:534
+#: models.py:313 models.py:375 models.py:669 templates/draft_edit.html:30
+#: templates/pool.html:32 templates/showexpensedata.html:77
 msgid "Type"
 msgstr "Typ"
 
-#: models.py:283
+#: models.py:315
 msgid "Site language"
 msgstr "Språk"
 
-#: models.py:320
+#: models.py:355 templates/api_docs.html:90
 msgid "Mileage"
 msgstr "Kilometerersättning"
 
-#: models.py:321
+#: models.py:356 templates/api_docs.html:91
 msgid "Full per diem"
 msgstr "Heldagtraktamente"
 
-#: models.py:322
+#: models.py:357 templates/api_docs.html:92
 msgid "Partial per diem"
 msgstr "Partiellt dagtraktamente"
 
-#: models.py:323
+#: models.py:358 templates/api_docs.html:93
 msgid "Foreign per diem"
 msgstr "Utrikes dagtraktamente"
 
-#: models.py:324
+#: models.py:359 templates/api_docs.html:94
 msgid "Meal allowance"
 msgstr "Måltidsersättning"
 
-#: models.py:325
+#: models.py:360 templates/api_docs.html:95
 msgid "Other"
 msgstr "Övrigt"
 
-#: models.py:329
+#: models.py:364
 msgid "km"
 msgstr "km"
 
-#: models.py:330
+#: models.py:365
 msgid "days"
 msgstr "dagar"
 
-#: models.py:331
+#: models.py:366
 msgid "pieces"
 msgstr "stycken"
 
-#: models.py:332
+#: models.py:367
 msgid "€"
 msgstr "€"
 
-#: models.py:338
+#: models.py:373
 msgid "Active"
 msgstr "Aktiv"
 
-#: models.py:342 models.py:376
+#: models.py:377 models.py:411
 msgid "Requires receipt"
 msgstr "Kräver kvitto"
 
-#: models.py:344 models.py:536
+#: models.py:379 models.py:671
 msgid ""
 "The per price for the expense type (mileage: € per km, other expenses: 1, "
 "advances: -1)"
@@ -329,90 +341,100 @@ msgstr ""
 "Kostnad per enhet (kilometerersättning per km, övriga kostnader: 1, "
 "förskott: -1)"
 
-#: models.py:346
+#: models.py:381
 #, fuzzy
 #| msgid "Requires ending time"
 msgid "Requires ending date and time"
 msgstr "Kräver avslutningstid"
 
-#: models.py:348 models.py:380
+#: models.py:383 models.py:415
 #, fuzzy
 #| msgid "Requires ending time"
 msgid "Requires starting time"
 msgstr "Kräver avslutningstid"
 
-#: models.py:350
+#: models.py:385
 msgid "Person type"
 msgstr "Persontyp"
 
-#: models.py:351
+#: models.py:386
 msgid "Account"
 msgstr "Konto"
 
-#: models.py:352
+#: models.py:387
 msgid "Unit"
 msgstr "Enhet"
 
-#: models.py:370
+#: models.py:405
 msgid "Attention. Route and extra passengers"
 msgstr "Obs. Resrutt och tilläggspersoner"
 
-#: models.py:371
+#: models.py:406
 msgid ""
 "Description of cost, for example route, participants, or use of products."
 msgstr ""
 "Beskrivning av kostnad, t. ex. resrutt, deltagare, eller användning av varor"
 
-#: models.py:378
+#: models.py:413
 msgid "Requires ending time"
 msgstr "Kräver avslutningstid"
 
-#: models.py:418 models.py:423
+#: models.py:453 templates/organisationselection.html:14 templates/pool.html:18
+msgid "Draft"
+msgstr ""
+
+#: models.py:454 models.py:459
 msgid "Open"
 msgstr "Öppen"
 
-#: models.py:424
+#: models.py:460
 msgid "Not needed"
 msgstr ""
 
-#: models.py:433
+#: models.py:469
 msgid "Email address"
 msgstr "E-postadressen"
 
-#: models.py:434
+#: models.py:470
 msgid "CC email address"
 msgstr "Kopia e-postadress"
 
-#: models.py:435
+#: models.py:471
 msgid "Copy of the expense will be sent to the email."
 msgstr ""
 
-#: models.py:443
+#: models.py:479
+#, fuzzy
+#| msgid ""
+#| "If you apply for an expense reimbursement for a local group, enter the "
+#| "group’s business ID here. Kilometric allowances and daily subsistence "
+#| "allowances can not be applied for with a business ID."
 msgid ""
-"If you apply for an expense reimbursement for a local group, enter the "
-"group’s business ID here. Kilometric allowances and daily subsistence "
-"allowances can not be applied for with a business ID."
+"Required if applying for kilometric or daily subsistence allowances due to "
+"tax reporting. If you apply for an expense reimbursement for a local group, "
+"enter the group’s business ID here. Kilometric allowances and daily "
+"subsistence allowances can not be applied for with a business ID."
 msgstr ""
 "Ifall du ansöker om kostnadsersättning för en kår, mata in kårens FO-nummer "
 "här. Kilometerersättningar och dagtraktamenten kan inte ansökas med FO-"
 "nummer."
 
-#: models.py:446
+#: models.py:482
 msgid "Allocation of cost"
 msgstr "Allokering av kostnad"
 
-#: models.py:447
+#: models.py:483
 msgid ""
 "For example name of event, cost centre, activity area, or responsible "
 "employee"
 msgstr ""
 "T. ex. evenemang, kostnadsställe, verksamhetsområde eller ansvarig anställd"
 
-#: models.py:448
+#: models.py:484
 msgid "Info"
 msgstr "Tilläggsinformation"
 
-#: models.py:449
+#: models.py:485
 #, fuzzy
 #| msgid "Names of the additional passengers, people in the meeting etc."
 msgid ""
@@ -422,35 +444,36 @@ msgstr ""
 "Namn på övriga passagerare och mötesdeltagare, kostnadsställe, "
 "verksamhetsområde m.m."
 
-#: models.py:452
+#: models.py:488 templates/api_docs.html:206
 msgid "Status"
 msgstr "Status"
 
-#: models.py:454
+#: models.py:490
 msgid "Katre status"
 msgstr ""
 
-#: models.py:516 views.py:224 views.py:303
+#: models.py:649 views.py:389 views.py:469
 msgid "Begin at"
 msgstr "Inleds"
 
-#: models.py:518 views.py:226 views.py:304
+#: models.py:651 views.py:391 views.py:470
 msgid "Ended at"
 msgstr "Avslutas"
 
-#: models.py:521 views.py:232 views.py:309
+#: models.py:654 views.py:397 views.py:475
 msgid "Expense type"
 msgstr "Typ av omkostnad"
 
-#: models.py:523
+#: models.py:656
 msgid "Cost centre"
 msgstr "Kostnadsställe"
 
-#: models.py:528 views.py:176 views.py:314
+#: models.py:663 templates/draft_edit.html:32 templates/pool.html:35
+#: templates/showexpensedata.html:79 views.py:341 views.py:480
 msgid "Receipt"
 msgstr "Kvitto"
 
-#: models.py:529
+#: models.py:664
 msgid ""
 "A scan or picture of the receipt. Accepted formats include PDF, PNG and JPG. "
 "Note: The receipt must clearly show what, when and how much has been paid!"
@@ -458,44 +481,339 @@ msgstr ""
 "Bild av kvittot. Godkända format är PDF, PNG och JPG. Obs: Av kvittot bör "
 "klart framgå vad, när och hur mycket som betalats!"
 
-#: templates/base.html:40
+#: templates/api_docs.html:6
+msgid "REST API Documentation"
+msgstr ""
+
+#: templates/api_docs.html:9
+msgid "Base URL:"
+msgstr ""
+
+#: templates/api_docs.html:10
+msgid "Authentication:"
+msgstr ""
+
+#: templates/api_docs.html:11
+msgid "Formats:"
+msgstr ""
+
+#: templates/api_docs.html:14
+msgid "Authentication"
+msgstr ""
+
+#: templates/api_docs.html:16 templates/api_docs.html:41
+#: templates/api_docs.html:102
+msgid "Method"
+msgstr ""
+
+#: templates/api_docs.html:16 templates/api_docs.html:41
+#: templates/api_docs.html:102
+msgid "Endpoint"
+msgstr ""
+
+#: templates/api_docs.html:21
+msgid "Returns an API token for valid username and password credentials."
+msgstr ""
+
+#: templates/api_docs.html:26
+#, fuzzy
+#| msgid "Requires receipt"
+msgid "Request"
+msgstr "Kräver kvitto"
+
+#: templates/api_docs.html:32
+msgid "Response"
+msgstr ""
+
+#: templates/api_docs.html:37
+msgid "Configuration Endpoints"
+msgstr ""
+
+#: templates/api_docs.html:38
+msgid ""
+"These endpoints only return records the authenticated user may use. "
+"Organisations must be active and must have at least one active expense type "
+"available to the user's person type."
+msgstr ""
+
+#: templates/api_docs.html:46
+msgid "List accessible active organisations."
+msgstr ""
+
+#: templates/api_docs.html:51
+msgid "Retrieve one accessible organisation."
+msgstr ""
+
+#: templates/api_docs.html:56
+msgid ""
+"List active expense types for active organisations, filtered by the user's "
+"person type."
+msgstr ""
+
+#: templates/api_docs.html:61
+msgid "Retrieve one accessible expense type."
+msgstr ""
+
+#: templates/api_docs.html:66
+#, fuzzy
+#| msgid "Organisation data"
+msgid "Organisation fields"
+msgstr "Organisationens uppgifter"
+
+#: templates/api_docs.html:74
+#, fuzzy
+#| msgid "Expense types"
+msgid "Expense type fields"
+msgstr "Typ av kostnad"
+
+#: templates/api_docs.html:89
+#, fuzzy
+#| msgid "Expense types"
+msgid "Expense type codes:"
+msgstr "Typ av kostnad"
+
+#: templates/api_docs.html:98
+msgid "Pool Rows"
+msgstr ""
+
+#: templates/api_docs.html:99
+msgid ""
+"Pool rows are unsubmitted expense lines owned by the authenticated user. "
+"They can later be bundled into a draft expense application from the web UI."
+msgstr ""
+
+#: templates/api_docs.html:107
+msgid "List the caller's pool rows, newest first."
+msgstr ""
+
+#: templates/api_docs.html:112
+msgid "Create a pool row."
+msgstr ""
+
+#: templates/api_docs.html:117
+msgid "Retrieve one pool row owned by the caller."
+msgstr ""
+
+#: templates/api_docs.html:122
+msgid "Partially update a pool row owned by the caller."
+msgstr ""
+
+#: templates/api_docs.html:127
+msgid "Replace a pool row owned by the caller."
+msgstr ""
+
+#: templates/api_docs.html:132
+msgid "Delete a pool row owned by the caller."
+msgstr ""
+
+#: templates/api_docs.html:137
+msgid "Pool row fields"
+msgstr ""
+
+#: templates/api_docs.html:139
+msgid "Field"
+msgstr ""
+
+#: templates/api_docs.html:139
+msgid "Required"
+msgstr ""
+
+#: templates/api_docs.html:139
+#, fuzzy
+#| msgid "Note!"
+msgid "Notes"
+msgstr "Obs!"
+
+#: templates/api_docs.html:141 templates/api_docs.html:147
+#: templates/api_docs.html:150 templates/api_docs.html:151
+msgid "No"
+msgstr ""
+
+#: templates/api_docs.html:141
+msgid "Read-only."
+msgstr ""
+
+#: templates/api_docs.html:142 templates/api_docs.html:143
+#: templates/api_docs.html:145 templates/api_docs.html:146
+#: templates/api_docs.html:148
+msgid "Yes"
+msgstr ""
+
+#: templates/api_docs.html:142
+#, fuzzy
+#| msgid "The per price for the expense type"
+msgid "Text description of the expense row."
+msgstr "Kulutyypin á-hinta"
+
+#: templates/api_docs.html:143
+msgid "ISO 8601 datetime, for example"
+msgstr ""
+
+#: templates/api_docs.html:144 templates/api_docs.html:149
+msgid "Conditional"
+msgstr ""
+
+#: templates/api_docs.html:144 templates/api_docs.html:149
+msgid "Required when the selected expense type has"
+msgstr ""
+
+#: templates/api_docs.html:145
+msgid "Must be active and accessible to the user."
+msgstr ""
+
+#: templates/api_docs.html:146
+msgid ""
+"Must be active, accessible to the user, and belong to the same organisation."
+msgstr ""
+
+#: templates/api_docs.html:147
+msgid ""
+"If supplied, it must belong to the same organisation. There is currently no "
+"API endpoint for discovering account dimensions."
+msgstr ""
+
+#: templates/api_docs.html:148
+#, fuzzy
+#| msgid "Amount of kilometres, days or the sum of the expense"
+msgid ""
+"Decimal amount, kilometres, days, or pieces depending on the expense type "
+"unit."
+msgstr "Antal kilometrar, dagar eller totala utgifterna"
+
+#: templates/api_docs.html:149
+msgid "Accepted file types are validated by the server."
+msgstr ""
+
+#: templates/api_docs.html:150
+msgid "Read-only. Pool rows always have"
+msgstr ""
+
+#: templates/api_docs.html:151
+msgid "Read-only. Set from the token owner."
+msgstr ""
+
+#: templates/api_docs.html:155
+msgid "JSON create example"
+msgstr ""
+
+#: templates/api_docs.html:168
+msgid "Per diem example"
+msgstr ""
+
+#: templates/api_docs.html:178
+msgid "Multipart receipt upload example"
+msgstr ""
+
+#: templates/api_docs.html:188
+msgid "Successful response"
+msgstr ""
+
+#: templates/api_docs.html:204
+msgid "Validation and Status Codes"
+msgstr ""
+
+#: templates/api_docs.html:206
+msgid "Meaning"
+msgstr ""
+
+#: templates/api_docs.html:208
+msgid "Successful list, retrieve, or update response."
+msgstr ""
+
+#: templates/api_docs.html:209
+msgid "Pool row was created."
+msgstr ""
+
+#: templates/api_docs.html:210
+msgid "Pool row was deleted."
+msgstr ""
+
+#: templates/api_docs.html:211
+msgid ""
+"Missing or invalid field, inactive organisation, mismatched organisation and "
+"expense type, missing required receipt, missing required ending time, "
+"oversized receipt, or invalid account dimension."
+msgstr ""
+
+#: templates/api_docs.html:212
+msgid "Missing or invalid token."
+msgstr ""
+
+#: templates/api_docs.html:213
+msgid ""
+"The organisation or expense type is not available to the authenticated user."
+msgstr ""
+
+#: templates/api_docs.html:214
+msgid ""
+"The requested object does not exist or is not owned by the authenticated "
+"user."
+msgstr ""
+
+#: templates/base.html:41
 #, fuzzy
 #| msgid "Create a new expense application"
 msgid "New expense application"
 msgstr "Skapa en ny redovisning"
 
-#: templates/base.html:41 templates/ownexpenses.html:5 views.py:87
+#: templates/base.html:42 templates/pool.html:5 views.py:122
+msgid "My Pool"
+msgstr ""
+
+#: templates/base.html:43 templates/ownexpenses.html:5 views.py:252
 msgid "My expenses"
 msgstr "Tidigare redovisningar"
 
-#: templates/base.html:42
+#: templates/base.html:44
 msgid "User information"
 msgstr "Mina uppgifter"
 
-#: templates/base.html:44
+#: templates/base.html:45
+#, fuzzy
+#| msgid "Selectable"
+msgid "Actable"
+msgstr "Valbar"
+
+#: templates/base.html:46
+msgid "All"
+msgstr ""
+
+#: templates/base.html:48
+msgid "More"
+msgstr ""
+
+#: templates/base.html:50
+msgid "API Docs"
+msgstr ""
+
+#: templates/base.html:51
+msgid "Data protection"
+msgstr ""
+
+#: templates/base.html:53
 msgid "Admin"
 msgstr "Admin"
 
-#: templates/base.html:48
+#: templates/base.html:59
 #, fuzzy
 #| msgid "Site language"
 msgid "Languages"
 msgstr "Språk"
 
-#: templates/base.html:65
+#: templates/base.html:76
 msgid "Log out"
 msgstr "Logga ut"
 
-#: templates/base.html:67 templates/django_registration/login.html:59
+#: templates/base.html:78 templates/django_registration/login.html:56
 msgid "Sign up"
 msgstr "Registrera dig här"
 
-#: templates/base.html:68 templates/django_registration/login.html:41
+#: templates/base.html:79 templates/django_registration/login.html:41
 #: templates/django_registration/registration_form.html:41
 msgid "Log in"
 msgstr "Logga in"
 
-#: templates/base.html:95
+#: templates/base.html:110
 msgid "Issues with the service?"
 msgstr "Problem med webbtjänst?"
 
@@ -632,19 +950,13 @@ msgid "New user"
 msgstr "Ny användare"
 
 #: templates/django_registration/login.html:54
-msgid ""
-"If you have not used the Finnish scout's expense system before, please "
-"register."
+#, fuzzy
+#| msgid ""
+#| "If you have not used the Finnish scout's expense system before, please "
+#| "register."
+msgid "If you have not used the Yhrek system before, please register."
 msgstr ""
 "Om du inte har använt Scouternas redovisningssystem, vänligen registrera."
-
-#: templates/django_registration/login.html:57
-msgid "Note!"
-msgstr "Obs!"
-
-#: templates/django_registration/login.html:57
-msgid "Scout-ID does not work in the expense application."
-msgstr "Scout-ID fungerar inte i redovisningssystem"
 
 #: templates/django_registration/logout.html:5
 msgid "Logged Out"
@@ -713,6 +1025,18 @@ msgstr "Länken för ett nytt lösen har skickats per e-post"
 msgid "Password Reset"
 msgstr "Återställ lösenord"
 
+#: templates/django_registration/registration_closed.html:5
+#, fuzzy
+#| msgid "Registration failed"
+msgid "Registration closed"
+msgstr "Registreringen misslyckades"
+
+#: templates/django_registration/registration_closed.html:6
+msgid ""
+"Self-registration has been closed due to spam issues. If you need an "
+"account, contact <a href=\"support@yhrek.fi\">support@yhrek.fi</a>."
+msgstr ""
+
 #: templates/django_registration/registration_complete.html:6
 msgid ""
 "Registration has been saved. An email containing a confirmation link has "
@@ -736,6 +1060,77 @@ msgstr "Registrera dig här"
 msgid "Reset your password"
 msgstr "Återställ lösenord"
 
+#: templates/draft_edit.html:5 views.py:234
+msgid "Editing Draft"
+msgstr ""
+
+#: templates/draft_edit.html:11
+#, fuzzy
+#| msgid "Activation failed"
+msgid "Application Details"
+msgstr "Aktiveringen av kontot misslyckades"
+
+#: templates/draft_edit.html:19
+msgid "Attached Receipts"
+msgstr ""
+
+#: templates/draft_edit.html:21
+msgid "Add from Pool"
+msgstr ""
+
+#: templates/draft_edit.html:28 templates/draft_edit.html:104
+#: templates/pool.html:30 templates/showexpensedata.html:76
+msgid "Date"
+msgstr "Datum"
+
+#: templates/draft_edit.html:44 templates/pool.html:49
+msgid "View"
+msgstr ""
+
+#: templates/draft_edit.html:52
+msgid "No receipts attached yet."
+msgstr ""
+
+#: templates/draft_edit.html:57
+#, fuzzy
+#| msgid "Total"
+msgid "Total:"
+msgstr "Totalt"
+
+#: templates/draft_edit.html:67
+msgid ""
+"Are you sure you want to completely discard this draft? Its attached "
+"receipts will safely return to your pool."
+msgstr ""
+
+#: templates/draft_edit.html:69
+msgid "Discard Draft"
+msgstr ""
+
+#: templates/draft_edit.html:74
+#, fuzzy
+#| msgid "Submit application"
+msgid "Submit Final Application"
+msgstr "Sänd ansökan"
+
+#: templates/draft_edit.html:89
+msgid "Select Receipts from Pool"
+msgstr ""
+
+#: templates/draft_edit.html:98
+msgid "No available receipts in your pool for this organisation."
+msgstr ""
+
+#: templates/draft_edit.html:123
+msgid "Close"
+msgstr ""
+
+#: templates/draft_edit.html:125
+#, fuzzy
+#| msgid "Selectable"
+msgid "Add Selected"
+msgstr "Valbar"
+
 #: templates/expense-row-snippet.html:39
 msgid "Delete"
 msgstr "Radera"
@@ -744,25 +1139,26 @@ msgstr "Radera"
 msgid "Default"
 msgstr "Standard"
 
-#: templates/expense.html:6 views.py:269
+#: templates/expense.html:6 views.py:409 views.py:434 views.py:490
 #, fuzzy
 #| msgid "Expenses"
 msgid "Expense for"
 msgstr "Kostnader för"
 
-#: templates/expense.html:44 templates/showexpense.html:36
+#: templates/expense.html:26 templates/expense_list.html:4
+#: templates/showexpensedata.html:70
 msgid "Expenses"
 msgstr "Kostnader"
 
-#: templates/expense.html:53 templates/organisationedit.html:55
+#: templates/expense.html:35 templates/organisationedit.html:55
 msgid "Add new row"
 msgstr "Lägg till en ny rad"
 
-#: templates/expense.html:65
+#: templates/expense.html:47
 msgid "Expense total"
 msgstr "Kostnader totalt"
 
-#: templates/expense.html:70
+#: templates/expense.html:52
 msgid "Preview application"
 msgstr "Granska ansökan"
 
@@ -779,9 +1175,13 @@ msgid "Expense types"
 msgstr "Typ av kostnad"
 
 #: templates/organisationedit.html:46
+#, fuzzy
+#| msgid ""
+#| "Guide for using the expense types can be found from <a href=\"/"
+#| "organisation/help/\" target=\"_blank\">here</a>."
 msgid ""
 "Guide for using the expense types can be found from <a href=\"/organisation/"
-"help/\" target=\"_blank\">here</a>."
+"help/\" target=\"_blank\" rel=\"noopener noreferrer\">here</a>."
 msgstr ""
 "<a href=\"/organisation/help/\" target=\"_blank\">Här</a> finner du "
 "instruktionerna för hur kostnadsslagen används."
@@ -791,9 +1191,19 @@ msgid "Save information"
 msgstr "Spara informationen"
 
 #: templates/organisationselection.html:5 templates/orgedit_selection.html:5
-#: views.py:71
+#: views.py:110
 msgid "Select your organisation to continue"
 msgstr "Välj organisation"
+
+#: templates/organisationselection.html:9
+msgid "Your Drafts"
+msgstr ""
+
+#: templates/organisationselection.html:20
+#, fuzzy
+#| msgid "Preview application"
+msgid "New Application"
+msgstr "Granska ansökan"
 
 #: templates/personinfo.html:9
 msgid "User info"
@@ -807,80 +1217,137 @@ msgstr "Ändra lösen"
 msgid "Organisation admin"
 msgstr "Organisationens admin"
 
-#: templates/showexpense.html:6
-#, python-format
-msgid "Expense for %(organisation_name)s"
-msgstr "Kostnad för %(organisation_name)s"
+#: templates/pool.html:8
+msgid "Your pool is currently empty. Upload receipts from the mobile app."
+msgstr ""
+
+#: templates/pool.html:14
+msgid "Target Draft:"
+msgstr ""
+
+#: templates/pool.html:16
+msgid "-- Create New Draft --"
+msgstr ""
+
+#: templates/pool.html:22
+msgid "Bundle Selected Receipts"
+msgstr ""
+
+#: templates/pool.html:34
+#, fuzzy
+#| msgid "Organisation data"
+msgid "Organisation"
+msgstr "Organisationens uppgifter"
 
 #: templates/showexpense.html:10
-msgid "Ilmoittajan tiedot"
-msgstr "Personliga uppgifter"
+msgid "Käsittelytiedot"
+msgstr ""
 
-#: templates/showexpense.html:26
-msgid "Kululaskun tiedot"
-msgstr "Redovisningens uppgifter"
+#: templates/showexpense.html:42
+msgid "Lataa PDF"
+msgstr ""
 
-#: templates/showexpense.html:39
-#, fuzzy
-#| msgid "Expenses"
-msgid "Expense "
-msgstr "Kostnader"
+#: templates/showexpense.html:50
+msgid "Vastaanotettu"
+msgstr ""
 
-#: templates/showexpense.html:43 templates/showexpense.html:74
-msgid "Date"
-msgstr "Datum"
+#: templates/showexpense.html:57
+msgid "Asiahyväksytty"
+msgstr ""
 
-#: templates/showexpense_preview.html:15
+#: templates/showexpense.html:64
+msgid "Hallinnollisesti hyväksytty"
+msgstr ""
+
+#: templates/showexpense.html:71
+msgid "Maksettu"
+msgstr ""
+
+#: templates/showexpense_preview.html:16
 msgid "Edit application"
 msgstr "Ändra ansökan"
 
-#: templates/showexpense_preview.html:18
+#: templates/showexpense_preview.html:19
 #, fuzzy
 #| msgid "Submit application for review"
 msgid "Submit for review"
 msgstr "Sänd ansökan för granskning"
 
-#: views.py:111
+#: views.py:141
+msgid "No valid receipts selected."
+msgstr ""
+
+#: views.py:146
+msgid "All bundled receipts must belong to the same organisation."
+msgstr ""
+
+#: views.py:152
+msgid "No workflow configured for this organisation. Please contact support."
+msgstr ""
+
+#: views.py:171
+msgid "The selected draft organisation does not match the receipts."
+msgstr ""
+
+#: views.py:176
+#, fuzzy
+#| msgid "You were successfully logged out."
+msgid "Receipts successfully moved to draft."
+msgstr "Du är nu utloggad ur systemet."
+
+#: views.py:185
+msgid "Draft discarded. Receipts have returned to your pool."
+msgstr ""
+
+#: views.py:211
+msgid "Lines added from pool."
+msgstr ""
+
+#: views.py:217
+msgid "Please add at least one receipt line before submitting."
+msgstr ""
+
+#: views.py:228
+msgid "Application submitted successfully."
+msgstr ""
+
+#: views.py:276
 #, fuzzy
 #| msgid "Please verify that all information is correct."
 msgid "Please verify your personal information is correct."
 msgstr "Vänligen kontrollera att all information är korrekt."
 
-#: views.py:127
-msgid "Applicant Name"
-msgstr "Namn"
-
-#: views.py:170 views.py:368
+#: views.py:335 views.py:540
 msgid "Please verify that all information is correct."
 msgstr "Vänligen kontrollera att all information är korrekt."
 
-#: views.py:178
+#: views.py:343
 #, fuzzy
 #| msgid "Please verify that all information is correct."
 msgid "Please verify the given file."
 msgstr "Vänligen kontrollera att all information är korrekt."
 
-#: views.py:195
+#: views.py:360
 #, fuzzy
 #| msgid "Please verify that all information is correct."
 msgid "Please verify ending dates are correct."
 msgstr "Vänligen kontrollera att all information är korrekt."
 
-#: views.py:212
+#: views.py:377
 #, fuzzy
 #| msgid "Please verify that all information is correct."
 msgid "Please verify dates are correct."
 msgstr "Vänligen kontrollera att all information är korrekt."
 
-#: views.py:233 views.py:310
+#: views.py:398 views.py:476
 msgid "Sum"
 msgstr "Summa"
 
-#: views.py:240 views.py:295
+#: views.py:405 views.py:461
 msgid "Total"
 msgstr "Totalt"
 
-#: views.py:242
+#: views.py:407
 msgid ""
 "Please verify that all information is correct before submitting the "
 "application for review"
@@ -888,26 +1355,100 @@ msgstr ""
 "Vänligen kontrollera att all information är korrekt innan du sänder den "
 "vidare för granskning"
 
-#: views.py:260
+#: views.py:425
 msgid "Expense information saved."
 msgstr "Informationen om omkostnader har sparats"
 
-#: views.py:365
+#: views.py:456
+msgid "Workflow"
+msgstr ""
+
+#: views.py:537
 msgid "Profile details updated."
 msgstr "Profiluppgifterna har uppdaterats."
 
-#: views.py:402
+#: views.py:593 views.py:604
+msgid "Expense event was not added. Perhaps you weren't within your limits?"
+msgstr ""
+
+#: views.py:601
+#, fuzzy
+#| msgid "Expense information saved."
+msgid "Expense event was added."
+msgstr "Informationen om omkostnader har sparats"
+
+#: views.py:667
 msgid "Organisation details updated."
 msgstr "Organisationsuppgifter har uppdaterats."
+
+#, fuzzy, python-format
+#~| msgid ""
+#~| "Hi!\n"
+#~| "\n"
+#~| "Thank you for registering for the system. Visit this link to confirm "
+#~| "your email address and activate your account:\n"
+#~| "\n"
+#~| "https://kululasku.partio.fi%(url)s\n"
+#~| "\n"
+#~| "If you didn't request the account, DO NOT click on the link. If you have "
+#~| "any questions or concerns, you can reply to this email.\n"
+#~| "\n"
+#~| "Best regards,\n"
+#~| "-- \n"
+#~| "Site administration"
+#~ msgid ""
+#~ "Hi!\n"
+#~ "\n"
+#~ "Thank you for registering for the system. Visit this link to confirm your "
+#~ "email address and activate your account:\n"
+#~ "\n"
+#~ "https://kululasku.partio.fi%(url)s\n"
+#~ "\n"
+#~ "If you didn't request the account, DO NOT click on the link. If you have "
+#~ "any questions or concerns, please refer to https://www.partio.fi/"
+#~ "partiolaiselle/apua-ja-ohjeita/jasenpalvelu/.\n"
+#~ "\n"
+#~ "Best regards,\n"
+#~ "-- \n"
+#~ "Site administration"
+#~ msgstr ""
+#~ "Hej!\n"
+#~ "\n"
+#~ "Tack för din registrering i systemet. Öppna denna länk och bekräfta din e-"
+#~ "postadress och aktivera ditt användarkonto:\n"
+#~ "\n"
+#~ "https://kululasku.partio.fi%(url)s\n"
+#~ "\n"
+#~ "Om du inte anhållit om detta användarkonto, ÖPPNA INTE denna länk. Om du "
+#~ "har frågor, svara på detta meddelande.\n"
+#~ "\n"
+#~ "Mvh,\n"
+#~ "— \n"
+#~ "Admin"
+
+#~ msgid "Scout-ID does not work in the expense application."
+#~ msgstr "Scout-ID fungerar inte i redovisningssystem"
+
+#, python-format
+#~ msgid "Expense for %(organisation_name)s"
+#~ msgstr "Kostnad för %(organisation_name)s"
+
+#~ msgid "Ilmoittajan tiedot"
+#~ msgstr "Personliga uppgifter"
+
+#~ msgid "Kululaskun tiedot"
+#~ msgstr "Redovisningens uppgifter"
+
+#, fuzzy
+#~| msgid "Expenses"
+#~ msgid "Expense "
+#~ msgstr "Kostnader"
 
 #~ msgid "Create a new expense application"
 #~ msgstr "Skapa en ny redovisning"
 
 #~ msgid "Purpose"
 #~ msgstr "Syfte"
-
-#~ msgid "Submit application"
-#~ msgstr "Sänd ansökan"
 
 #~ msgid "Cost Centre / Activity Sector"
 #~ msgstr "Kostnadsställe/ Verksamhetsområde"
@@ -983,6 +1524,3 @@ msgstr "Organisationsuppgifter har uppdaterats."
 
 #~ msgid "Advance"
 #~ msgstr "Ennakko"
-
-#~ msgid "The per price for the expense type"
-#~ msgstr "Kulutyypin á-hinta"

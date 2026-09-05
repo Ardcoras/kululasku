@@ -16,6 +16,8 @@ sendgrid.env
 staticfiles/*
 .vscode/*
 storage/*
+static/admin/
+static/rest_framework/
 static/uploads/receipts/*
 expenses/uploads/receipts
 media/receipts/*
