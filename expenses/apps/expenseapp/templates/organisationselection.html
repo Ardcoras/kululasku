@@ -4,6 +4,22 @@
 {% block content %}
 <h1 class="middle-headline">{% trans "Select your organisation to continue" %}</h1>
 <section class="pure-menu pure-menu-open">
+
+{% if drafts %}
+<h2 class="sub-headline" style="margin-left: 1em; margin-top: 1em;">{% trans "Your Drafts" %}</h2>
+<ul class="pure-menu-list" style="padding: 0; margin-bottom: 2em;">
+{% for draft in drafts %}
+  <li class="pure-menu-item orgitem" style="display: flex; justify-content: space-between; align-items: center;">
+    <a href="{% url 'expense_draft_edit' draft.id %}" style="flex-grow: 1;">
+      {{ draft.organisation.name }} {% trans "Draft" %} ({{ draft.created_at|date:"j.n.Y" }}) <span class="arrow">></span>
+    </a>
+  </li>
+{% endfor %}
+</ul>
+
+<h2 class="sub-headline" style="margin-left: 1em;">{% trans "New Application" %}</h2>
+{% endif %}
+
 <ul class="pure-menu-list" style="padding: 0;">
 {% for organisation in organisations %}
   <li class="pure-menu-item orgitem">

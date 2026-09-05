@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="middle-headline">{% trans "Editing Draft" %} - {{ expense.organisation.name }}</h1>
+
+<form method="POST" action="{% url 'expense_draft_edit' expense.id %}" class="pure-form pure-form-aligned" id="draft-form" style="margin-top: 1em;">
+    {% csrf_token %}
+    
+    <fieldset style="background: whitesmoke; padding: 1em; border-radius: 5px; margin-bottom: 2em;">
+        <legend>{% trans "Application Details" %}</legend>
+        {% for hidden in details_form.hidden_fields %}
+            {{ hidden }}
+        {% endfor %}
+        {% include "expense-details-fields.html" with form=details_form %}
+    </fieldset>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">
+        <h2 class="sub-headline" style="margin: 0;">{% trans "Attached Receipts" %}</h2>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#poolModal" style="background: rgb(0, 120, 231); color: white; padding: 0.5em 1em; border: none; border-radius: 3px; cursor: pointer;">
+            + {% trans "Add from Pool" %}
+        </button>
+    </div>
+
+    <table class="pure-table pure-table-horizontal" style="width: 100%; margin-bottom: 2em;">
+        <thead>
+            <tr>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Description" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th>{% trans "Amount" %}</th>
+                <th>{% trans "Receipt" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+            <tr>
+                <td>{{ line.begin_at|date:"d.m.Y" }}</td>
+                <td>{{ line.description }}</td>
+                <td>{{ line.expensetype.name|default:"-" }}</td>
+                <td>{{ line.basis|default:"0.00" }} €</td>
+                <td>
+                    {% if line.receipt %}
+                    <a href="{% url 'receipt_fetch' expenselineid=line.id %}" target="_blank" rel="noopener noreferrer">{% trans "View" %}</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #888;">{% trans "No receipts attached yet." %}</td>
+            </tr>
+            {% endfor %}
+            {% if lines %}
+            <tr style="background: #f1f1f1; font-weight: bold;">
+                <td colspan="3" style="text-align: right;">{% trans "Total:" %}</td>
+                <td colspan="2">{{ total_sum|default:"0.00" }} €</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3em;">
+        <div>
+            <!-- Added Delete Draft Action Here Instead -->
+            {% trans "Are you sure you want to completely discard this draft? Its attached receipts will safely return to your pool." as discard_confirm_message %}
+            <button type="submit" form="delete-draft-form" class="pure-button" style="background: #dc3545; color: white; padding: 0.75em 2em; font-size: 1.2em;" onclick="return confirm('{{ discard_confirm_message|escapejs }}');">
+                <i class="icon-trash"></i> {% trans "Discard Draft" %}
+            </button>
+        </div>
+        <div>
+            <button type="submit" name="submit_draft" value="1" class="pure-button" style="background: rgb(28, 184, 65); color: white; padding: 0.75em 2em; font-size: 1.2em;">
+                {% trans "Submit Final Application" %}
+            </button>
+        </div>
+    </div>
+</form>
+
+<form id="delete-draft-form" method="POST" action="{% url 'expense_draft_delete' expense.id %}" style="display: none;">
+    {% csrf_token %}
+</form>
+
+<!-- Modal for Pool selection -->
+<div class="modal fade" id="poolModal" tabindex="-1" role="dialog" aria-labelledby="poolModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="background: rgb(0, 120, 231); color: white;">
+        <h5 class="modal-title" id="poolModalLabel">{% trans "Select Receipts from Pool" %}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white;">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="POST" action="{% url 'expense_draft_edit' expense.id %}">
+          {% csrf_token %}
+          <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+            {% if not pool_lines %}
+                <p style="text-align: center;">{% trans "No available receipts in your pool for this organisation." %}</p>
+            {% else %}
+                <table class="pure-table pure-table-horizontal" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;"><input type="checkbox" id="modalSelectAll"></th>
+                            <th>{% trans "Date" %}</th>
+                            <th>{% trans "Description" %}</th>
+                            <th>{% trans "Amount" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pline in pool_lines %}
+                        <tr>
+                            <td><input type="checkbox" name="lines" value="{{ pline.id }}" class="modal-pool-checkbox"></td>
+                            <td>{{ pline.begin_at|date:"d.m.Y" }}</td>
+                            <td>{{ pline.description }}</td>
+                            <td>{{ pline.basis|default:"0.00" }} €</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% trans "Close" %}</button>
+            {% if pool_lines %}
+            <button type="submit" name="add_pool_lines" value="1" class="btn btn-primary" style="background: rgb(28, 184, 65); border: none;">{% trans "Add Selected" %}</button>
+            {% endif %}
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.getElementById('modalSelectAll').addEventListener('change', function(e) {
+        var checkboxes = document.querySelectorAll('.modal-pool-checkbox');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = e.target.checked;
+        }
+    });
+</script>
+{% endblock %}

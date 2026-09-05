@@ -1,12 +1,18 @@
 from django.urls import include, path
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required
+from django.views.generic import RedirectView, TemplateView
 from expenseapp import views
 from django.contrib.flatpages import views as flatviews
+
 admin.site.site_header = 'Kululasku palvelun ylläpito'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1', RedirectView.as_view(url='/api/v1/', permanent=False)),
+    path('api/v1/', include('expenseapp.api.urls')),
+    path('api/docs/', login_required(TemplateView.as_view(template_name="api_docs.html")), name='api_docs'),
     path('personinfo/', views.personinfo, name='personinfo'),
     path('i18n/<str:lang>', views.language_activate, name='language_activate'),
     path('organisation/<int:organisation_id>',
@@ -15,6 +21,10 @@ urlpatterns = [
          views.annualreport, name='organisation_annualreport'),
     path('organisation/<int:organisation_id>/annualarchive/<str:year>', views.annualarchive, name='organisation_annualarchive'),
     path('expense/', views.organisationselection, name='expense_new'),
+    path('expense/pool/', views.pool_view, name='expense_pool'),
+    path('expense/pool/bundle/', views.pool_bundle_view, name='expense_pool_bundle'),
+    path('expense/draft/<int:expense_id>/', views.expense_draft_edit, name='expense_draft_edit'),
+    path('expense/draft/<int:expense_id>/delete/', views.expense_draft_delete_view, name='expense_draft_delete'),
     path('expense/own/', views.ownexpenses, name='expense_own'),
     path('expense/act/', views.expense_actable_list, name='expense_actable_list'),
     path('expense/all/', views.expense_list, name='expense_list'),
@@ -48,5 +58,5 @@ urlpatterns = [
     path('accounts/password/done/',
          auth_views.PasswordResetCompleteView.as_view(template_name='django_registration/password_reset_complete.html'), name='password_reset_complete'),
     path('', flatviews.flatpage, {'url': '/index/'}, name='index'),
-    path('', include('django.contrib.flatpages.urls'))
+    path('', include('django.contrib.flatpages.urls')),
 ]

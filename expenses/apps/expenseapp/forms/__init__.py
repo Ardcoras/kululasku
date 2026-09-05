@@ -83,7 +83,7 @@ class ExpenseLineForm(ModelForm):
     class Meta:
         model = ExpenseLine
         exclude = ('expensetype_type', 'expensetype_name',
-                   'multiplier', 'accountdimension')
+                   'multiplier', 'accountdimension', 'user', 'organisation')
     field_order = ('expensetype', 'begin_at_date', 'begin_at_time',
                    'ended_at_date', 'ended_at_time', 'description', 'basis', 'receipt')
 
@@ -191,6 +191,25 @@ class ExpenseForm(ModelForm):
       workflows = Workflow.objects.filter(organisation=organisation)
   
       self.fields["workflow"].queryset = workflows
+      self.fields["name"].label = gettext_lazy('Applicant Name')
+
+
+class ExpenseDraftForm(ModelForm):
+    cc_email = forms.EmailField(label=gettext_lazy('CC Email'), max_length=255, required=False,
+                                widget=forms.EmailInput(attrs={'placeholder': gettext_lazy('Copy of expense will be sent to the email.')}))
+
+    class Meta:
+        model = Expense
+        fields = ('name', 'email', 'cc_email', 'phone', 'address', 'iban',
+                  'swift_bic', 'personno', 'description', 'workflow')
+
+    def __init__(self, *args, **kwargs):
+        organisation = kwargs.pop('organisation', None)
+        super().__init__(*args, **kwargs)
+        if organisation:
+            self.fields["workflow"].queryset = Workflow.objects.filter(organisation=organisation)
+        self.fields["name"].label = gettext_lazy('Applicant Name')
+
 
 class PersonForm(ModelForm):
     firstname = forms.CharField(label=gettext_lazy(

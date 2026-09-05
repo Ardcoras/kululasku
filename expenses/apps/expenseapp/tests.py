@@ -1,11 +1,16 @@
 import tempfile
+from io import StringIO
+from datetime import timezone as datetime_timezone
 from http import HTTPStatus
 from django.test import TestCase, override_settings
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 
 
-from .models import ExpenseType, Organisation, Person, Workflow
+from .models import Expense, ExpenseEvent, ExpenseLine, ExpenseType, Organisation, Person, Workflow, WorkflowStep
 
 
 FINNISH_IBAN = 'FI2112345600000785'
@@ -163,6 +168,579 @@ class TestNewExpenseFormTests(TestCase):
         self.assertContains(
             response, 'Kulutiedot tallennettu.'
         )
+
+    def _create_expensetype(self, organisation, persontype=1):
+        return ExpenseType.objects.create(
+            name="Muut",
+            active=True,
+            type="O",
+            requires_receipt=False,
+            multiplier=1.0,
+            requires_endtime=False,
+            requires_start_time=False,
+            persontype=persontype,
+            account="123",
+            unit="EUR",
+            organisation=organisation,
+        )
+
+    def _create_pool_line(self, expensetype, organisation):
+        return ExpenseLine.objects.create(
+            description="Pool line",
+            begin_at=timezone.now(),
+            basis=10,
+            expensetype=expensetype,
+            user=self.user,
+            organisation=organisation,
+        )
+
+    def _create_expense(self, description, status, personno='010101-123N'):
+        return Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=status,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno=personno,
+            description=description,
+        )
+
+    def _grant_organisation_permission(self):
+        permission = Permission.objects.get(
+            codename=f'change_organisation_{self.organisation.id}',
+        )
+        self.user.user_permissions.add(permission)
+
+    def _valid_draft_submit_data(self, **overrides):
+        data = {
+            'submit_draft': '1',
+            'name': 'Jacob Tester',
+            'email': 'jacob.tester@test.com',
+            'phone': '044123456',
+            'address': 'Testikatu 1',
+            'iban': FINNISH_IBAN,
+            'swift_bic': 'NDEAFIHH',
+            'personno': '010101-123N',
+            'description': 'Draft description',
+            'workflow': self.workflow.id,
+        }
+        data.update(overrides)
+        return data
+
+    def test_pool_bundle_rejects_mixed_organisations(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        other_org = Organisation.objects.create(
+            name='Other org',
+            business_id='7654321-1',
+            active=True,
+            send_active=True,
+        )
+
+        et1 = self._create_expensetype(self.organisation)
+        et2 = self._create_expensetype(other_org)
+
+        line1 = self._create_pool_line(et1, self.organisation)
+        line2 = self._create_pool_line(et2, other_org)
+
+        response = self.client.post('/expense/pool/bundle/', data={
+            'target_draft': 'new',
+            'lines': [str(line1.id), str(line2.id)],
+        })
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.url, '/expense/pool/')
+        self.assertEqual(Expense.objects.filter(user=self.user, status=-1).count(), 0)
+        self.assertIsNone(ExpenseLine.objects.get(id=line1.id).expense_id)
+        self.assertIsNone(ExpenseLine.objects.get(id=line2.id).expense_id)
+
+    def test_pool_bundle_creates_draft_and_attaches_lines(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line1 = self._create_pool_line(et, self.organisation)
+        line2 = self._create_pool_line(et, self.organisation)
+
+        response = self.client.post('/expense/pool/bundle/', data={
+            'target_draft': 'new',
+            'lines': [str(line1.id), str(line2.id)],
+        })
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        draft = Expense.objects.get(user=self.user, status=-1)
+        self.assertEqual(draft.organisation_id, self.organisation.id)
+        self.assertEqual(draft.workflow_id, self.workflow.id)
+        self.assertEqual(draft.name, 'Jacob Tester')
+        self.assertEqual(draft.num, '')
+        self.assertFalse(ExpenseEvent.objects.filter(expense=draft).exists())
+        self.assertEqual(ExpenseLine.objects.filter(expense=draft).count(), 2)
+        self.assertIn(f'/expense/draft/{draft.id}/', response.url)
+
+    def test_pool_bundle_does_not_reuse_already_claimed_lines(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+
+        first_response = self.client.post('/expense/pool/bundle/', data={
+            'target_draft': 'new',
+            'lines': [str(line.id)],
+        })
+        second_response = self.client.post('/expense/pool/bundle/', data={
+            'target_draft': 'new',
+            'lines': [str(line.id)],
+        })
+
+        self.assertEqual(first_response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(second_response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(second_response.url, '/expense/pool/')
+        self.assertEqual(Expense.objects.filter(user=self.user, status=-1).count(), 1)
+        line.refresh_from_db()
+        self.assertIsNotNone(line.expense_id)
+
+    def test_pool_receipt_download_requires_line_owner(self):
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+        line.receipt = SimpleUploadedFile('receipt.pdf', b'%PDF-1.4', content_type='application/pdf')
+        line.save()
+
+        other = User.objects.create_user(username='other.user', password='top_secret')
+
+        self.client.login(username='other.user', password='top_secret')
+        denied = self.client.get(f'/receipt/{line.id}')
+        self.assertEqual(denied.status_code, HTTPStatus.FOUND)
+
+        self.client.login(username='jacob.tester', password='top_secret')
+        allowed = self.client.get(f'/receipt/{line.id}')
+        self.assertEqual(allowed.status_code, HTTPStatus.OK)
+        self.assertEqual(allowed['X-Accel-Redirect'], line.receipt.url)
+
+    def test_draft_page_uses_authorized_receipt_links_and_separate_modal_form(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+        line.receipt = SimpleUploadedFile('receipt.pdf', b'%PDF-1.4', content_type='application/pdf')
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            description='Draft description',
+        )
+        line.expense = draft
+        line.save()
+
+        response = self.client.get(f'/expense/draft/{draft.id}/')
+        content = response.content.decode()
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertIn(f'/receipt/{line.id}', content)
+        self.assertNotIn(line.receipt.url, content)
+        self.assertLess(content.index('</form>'), content.index('id="poolModal"'))
+
+    def test_draft_edit_prefills_whitespace_name_from_user(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name=' ',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            description='Draft description',
+            num='1001',
+        )
+
+        response = self.client.get(f'/expense/draft/{draft.id}/')
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, 'value="Jacob Tester"')
+
+    def test_draft_submit_blocked_without_lines(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+            num='1001',
+        )
+
+        response = self.client.post(f'/expense/draft/{draft.id}/', data={
+            'submit_draft': '1',
+            'name': 'Jacob Tester',
+            'email': 'jacob.tester@test.com',
+            'phone': '044123456',
+            'address': 'Testikatu 1',
+            'iban': FINNISH_IBAN,
+            'swift_bic': 'NDEAFIHH',
+            'personno': '010101-123N',
+            'description': 'Draft description',
+            'workflow': self.workflow.id,
+        })
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.url, f'/expense/draft/{draft.id}/')
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, -1)
+
+    def test_draft_submit_blocked_with_invalid_email(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+            num='1004',
+        )
+        line = self._create_pool_line(et, self.organisation)
+        line.expense = draft
+        line.save()
+
+        response = self.client.post(f'/expense/draft/{draft.id}/', data={
+            'submit_draft': '1',
+            'name': 'Jacob Tester',
+            'email': 'not-an-email',
+            'phone': '044123456',
+            'address': 'Testikatu 1',
+            'iban': FINNISH_IBAN,
+            'swift_bic': 'NDEAFIHH',
+            'personno': '010101-123N',
+            'description': 'Draft description',
+            'workflow': self.workflow.id,
+        })
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, 'field-email required error')
+        self.assertContains(response, 'not-an-email')
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, -1)
+
+    def test_draft_submit_moves_status_and_saves_all_fields(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Old address 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Old desc',
+            num='1002',
+        )
+        line.expense = draft
+        line.save()
+
+        response = self.client.post(f'/expense/draft/{draft.id}/', data={
+            'submit_draft': '1',
+            'name': 'Jacob Updated',
+            'email': 'jacob.updated@test.com',
+            'phone': '05012341234',
+            'address': 'New address 5',
+            'iban': FINNISH_IBAN,
+            'swift_bic': 'NDEAFIHH',
+            'personno': '010101-123N',
+            'description': 'Updated draft description',
+            'workflow': self.workflow.id,
+        })
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, 0)
+        self.assertEqual(draft.name, 'Jacob Updated')
+        self.assertEqual(draft.email, 'jacob.updated@test.com')
+        self.assertEqual(draft.phone, '05012341234')
+        self.assertEqual(draft.address, 'New address 5')
+        self.assertEqual(draft.iban, FINNISH_IBAN)
+        self.assertEqual(draft.swift_bic, 'NDEAFIHH')
+        self.assertEqual(draft.personno, '010101-123N')
+        self.assertEqual(draft.description, 'Updated draft description')
+        self.assertEqual(response.url, f'/expense/{draft.id}')
+
+    def test_draft_submit_assigns_number_and_created_from_pool_event(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+        )
+        line.expense = draft
+        line.save()
+
+        self.assertEqual(draft.num, '')
+        self.assertFalse(ExpenseEvent.objects.filter(expense=draft).exists())
+
+        response = self.client.post(
+            f'/expense/draft/{draft.id}/',
+            data=self._valid_draft_submit_data(),
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, 0)
+        self.assertEqual(draft.num, '1001')
+        event = ExpenseEvent.objects.get(expense=draft, type='R')
+        self.assertEqual(event.notes, 'Created from pre-submitted entries')
+        self.assertFalse(ExpenseEvent.objects.filter(expense=draft, type='E').exists())
+
+    def test_draft_submit_allows_omitted_optional_nullable_fields(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Old address 1',
+            iban=FINNISH_IBAN,
+            swift_bic=None,
+            personno=None,
+            description='Old desc',
+            num='1005',
+        )
+        line.expense = draft
+        line.save()
+
+        response = self.client.post(f'/expense/draft/{draft.id}/', data={
+            'submit_draft': '1',
+            'name': 'Jacob Updated',
+            'email': 'jacob.updated@test.com',
+            'phone': '05012341234',
+            'address': 'New address 5',
+            'iban': FINNISH_IBAN,
+            'description': 'Updated draft description',
+            'workflow': self.workflow.id,
+        })
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, 0)
+        self.assertIsNone(draft.swift_bic)
+        self.assertIsNone(draft.personno)
+
+    def test_draft_delete_returns_lines_to_pool(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+            num='1003',
+        )
+        line = self._create_pool_line(et, self.organisation)
+        line.expense = draft
+        line.save()
+
+        response = self.client.post(f'/expense/draft/{draft.id}/delete/')
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(response.url, '/expense/')
+        line.refresh_from_db()
+        self.assertIsNone(line.expense_id)
+        self.assertFalse(Expense.objects.filter(id=draft.id).exists())
+
+    def test_draft_submit_uses_selected_workflow(self):
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        et = self._create_expensetype(self.organisation)
+        line = self._create_pool_line(et, self.organisation)
+        other_workflow = Workflow.objects.create(name="Alternate Workflow", organisation=self.organisation)
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+        )
+        line.expense = draft
+        line.save()
+
+        response = self.client.post(
+            f'/expense/draft/{draft.id}/',
+            data=self._valid_draft_submit_data(workflow=other_workflow.id),
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        draft.refresh_from_db()
+        self.assertEqual(draft.workflow_id, other_workflow.id)
+
+    def test_workflow_user_cannot_view_or_act_on_draft(self):
+        approver = User.objects.create_user(username='approver', password='top_secret')
+        WorkflowStep.objects.create(workflow=self.workflow, type='C', users=approver)
+        draft = Expense.objects.create(
+            user=self.user,
+            organisation=self.organisation,
+            workflow=self.workflow,
+            status=-1,
+            name='Jacob Tester',
+            email='jacob.tester@test.com',
+            phone='044123456',
+            address='Testikatu 1',
+            iban=FINNISH_IBAN,
+            swift_bic='NDEAFIHH',
+            personno='010101-123N',
+            description='Draft description',
+        )
+
+        self.client.login(username='approver', password='top_secret')
+
+        detail_response = self.client.get(f'/expense/{draft.id}')
+        addstep_response = self.client.get(f'/expense/{draft.id}/addstep?action=C')
+        actable_response = self.client.get('/expense/act/')
+        list_response = self.client.get('/expense/all/')
+
+        self.assertEqual(detail_response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(addstep_response.status_code, HTTPStatus.FOUND)
+        self.assertNotContains(actable_response, 'Draft description')
+        self.assertNotContains(list_response, 'Draft description')
+
+    def test_send_katre_excludes_drafts(self):
+        draft = self._create_expense(
+            description='Draft waiting for submission',
+            status=-1,
+        )
+        Expense.objects.filter(id=draft.id).update(
+            created_at=timezone.datetime(2026, 1, 1, tzinfo=datetime_timezone.utc),
+        )
+
+        out = StringIO()
+        call_command('send_katre', stdout=out)
+
+        self.assertIn('No katres to send.', out.getvalue())
+
+    def test_annualarchive_excludes_drafts(self):
+        self._grant_organisation_permission()
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        self._create_expense('Submitted annual archive expense', status=0)
+        self._create_expense('Draft annual archive expense', status=-1)
+
+        response = self.client.get(
+            f'/organisation/{self.organisation.id}/annualarchive/2026',
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertContains(response, 'Submitted annual archive expense')
+        self.assertNotContains(response, 'Draft annual archive expense')
+
+    def test_annualreport_excludes_drafts_from_tax_output(self):
+        self._grant_organisation_permission()
+        self.client.login(username='jacob.tester', password='top_secret')
+
+        expense_type = self._create_expensetype(self.organisation)
+        submitted = self._create_expense(
+            'Submitted annual report expense',
+            status=0,
+            personno='010101-123N',
+        )
+        draft = self._create_expense(
+            'Draft annual report expense',
+            status=-1,
+            personno='020202A1234',
+        )
+        ExpenseLine.objects.create(
+            description='Submitted line',
+            begin_at=timezone.now(),
+            basis=10,
+            expensetype=expense_type,
+            expense=submitted,
+            user=self.user,
+            organisation=self.organisation,
+        )
+        ExpenseLine.objects.create(
+            description='Draft line',
+            begin_at=timezone.now(),
+            basis=20,
+            expensetype=expense_type,
+            expense=draft,
+            user=self.user,
+            organisation=self.organisation,
+        )
+
+        response = self.client.get(
+            f'/organisation/{self.organisation.id}/annualreport/2026',
+        )
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        content = response.content.decode()
+        self.assertIn('010101-123N', content)
+        self.assertNotIn('020202A1234', content)
 
     def test_user_create_expense_with_a_file(self):
         expenseType = ExpenseType.objects.create(

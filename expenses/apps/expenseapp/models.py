@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib.admin import DateFieldListFilter
 from django.utils.translation import gettext_lazy
 from django.contrib.auth.models import Permission
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.contrib.contenttypes.models import ContentType
 from datetime import datetime, timezone
 from localflavor.generic.models import IBANField, BICField
@@ -450,6 +450,7 @@ class OrganisationAdmin(admin.ModelAdmin):
 
 
 APPLICATION_STATUSES = (
+    (-1, gettext_lazy('Draft')),
     (0, gettext_lazy('Open')),
     (1, gettext_lazy('Sent')),
 )
@@ -597,13 +598,27 @@ class Expense(models.Model):
       code = code + str(checksum)
       return code
 
+def remember_expense_status(sender, instance, **kwargs):
+  if instance.pk:
+    instance._previous_status = Expense.objects.filter(pk=instance.pk).values_list('status', flat=True).first()
+  else:
+    instance._previous_status = None
+
+
+def assign_expense_number(instance):
+  max_num = Expense.objects.filter(organisation=instance.organisation).exclude(num='').aggregate(Max('num'))
+  if max_num['num__max'] == '' or max_num['num__max'] == 0 or max_num['num__max'] is None:
+    max_num['num__max'] = 1000
+  instance.num = int(max_num['num__max']) + 1
+  Expense.objects.filter(pk=instance.pk).update(num=instance.num)
+
+
 def create_expense(sender, instance, created, **kwargs):
+  if instance.status == -1:
+    return
+
   if not instance.num or instance.num == '':
-    max_num = Expense.objects.filter(organisation=instance.organisation).aggregate(Max('num'))
-    if max_num['num__max'] == '' or max_num['num__max'] == 0:
-      max_num['num__max'] = 1000
-    instance.num = int(max_num['num__max']) + 1
-    instance.save()
+    assign_expense_number(instance)
 #  from django_request_local.middleware import RequestLocal
 #  current_request = RequestLocal.get_current_request()
 #  if not current_request:
@@ -612,10 +627,14 @@ def create_expense(sender, instance, created, **kwargs):
     e = ExpenseEvent(expense=instance, type='R', notes=u'Järjestelmä')
 #    e.user = current_request.user
     e.save()
+  elif getattr(instance, '_previous_status', None) == -1:
+    e = ExpenseEvent(expense=instance, type='R', notes=u'Created from pre-submitted entries')
+    e.save()
   else:
     e = ExpenseEvent(expense=instance, type='E')
 #    e.user = current_request.user
     e.save()
+pre_save.connect(remember_expense_status, sender=Expense)
 post_save.connect(create_expense, sender=Expense)
 
 def receipt_path(path, filename):
@@ -637,7 +656,9 @@ class ExpenseLine(models.Model):
         'Cost centre'), blank=True, null=True, on_delete=models.PROTECT)
     basis = models.DecimalField(gettext_lazy('Amount'), max_digits=10, decimal_places=2, help_text=gettext_lazy(
         'Amount of kilometres, days or the sum of the expense'))
-    expense = models.ForeignKey(Expense, on_delete=models.PROTECT)
+    expense = models.ForeignKey(Expense, on_delete=models.PROTECT, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
 
     receipt = models.FileField(gettext_lazy('Receipt'), upload_to='uploads/receipts', blank=True, null=True, validators=[validate_file_extension], help_text=gettext_lazy(
         'A scan or picture of the receipt. Accepted formats include PDF, PNG and JPG. Note: The receipt must clearly show what, when and how much has been paid!'))
@@ -653,6 +674,10 @@ class ExpenseLine(models.Model):
         self.multiplier = self.expensetype.multiplier
         self.expensetype_type = self.expensetype.type
         self.expensetype_name = self.expensetype.name
+
+        if self.expense_id:
+            self.user_id = self.expense.user_id
+            self.organisation_id = self.expense.organisation_id
 
         super(ExpenseLine, self).save(*args, **kwargs)
 

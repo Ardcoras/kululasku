@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="content" style="max-width: 980px; margin: 0 auto; padding: 2em;">
+    <h1 class="middle-headline">{% trans "REST API Documentation" %}</h1>
+
+    <div class="alert alert-info">
+        <strong>{% trans "Base URL:" %}</strong> <code>/api/v1/</code><br>
+        <strong>{% trans "Authentication:" %}</strong> <code>Authorization: Token &lt;api_token&gt;</code><br>
+        <strong>{% trans "Formats:" %}</strong> JSON for ordinary requests, multipart form data when uploading <code>receipt</code>.
+    </div>
+
+    <h2 class="sub-headline">1. {% trans "Authentication" %}</h2>
+    <table class="pure-table pure-table-bordered" style="width: 100%;">
+        <thead><tr><th>{% trans "Method" %}</th><th>{% trans "Endpoint" %}</th><th>{% trans "Description" %}</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>POST</strong></td>
+                <td><code>/api/v1/login/</code></td>
+                <td>{% trans "Returns an API token for valid username and password credentials." %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>{% trans "Request" %}</h3>
+<pre><code>{
+  "username": "testapi",
+  "password": "password123"
+}</code></pre>
+
+    <h3>{% trans "Response" %}</h3>
+<pre><code>{
+  "token": "0123456789abcdef..."
+}</code></pre>
+
+    <h2 class="sub-headline" style="margin-top: 2em;">2. {% trans "Configuration Endpoints" %}</h2>
+    <p>{% trans "These endpoints only return records the authenticated user may use. Organisations must be active and must have at least one active expense type available to the user's person type." %}</p>
+
+    <table class="pure-table pure-table-bordered" style="width: 100%;">
+        <thead><tr><th>{% trans "Method" %}</th><th>{% trans "Endpoint" %}</th><th>{% trans "Description" %}</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/organisations/</code></td>
+                <td>{% trans "List accessible active organisations." %}</td>
+            </tr>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/organisations/&lt;id&gt;/</code></td>
+                <td>{% trans "Retrieve one accessible organisation." %}</td>
+            </tr>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/expensetypes/</code></td>
+                <td>{% trans "List active expense types for active organisations, filtered by the user's person type." %}</td>
+            </tr>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/expensetypes/&lt;id&gt;/</code></td>
+                <td>{% trans "Retrieve one accessible expense type." %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>{% trans "Organisation fields" %}</h3>
+<pre><code>{
+  "id": 45,
+  "name": "Example organisation",
+  "business_id": "1234567-8",
+  "active": true
+}</code></pre>
+
+    <h3>{% trans "Expense type fields" %}</h3>
+<pre><code>{
+  "id": 123,
+  "name": "Full per diem",
+  "type": "FPD",
+  "requires_receipt": false,
+  "multiplier": "51.00",
+  "requires_endtime": true,
+  "requires_start_time": true,
+  "persontype": 1,
+  "unit": "d",
+  "organisation": 45
+}</code></pre>
+
+    <p>
+        <strong>{% trans "Expense type codes:" %}</strong>
+        <code>T</code> {% trans "Mileage" %},
+        <code>FPD</code> {% trans "Full per diem" %},
+        <code>PPD</code> {% trans "Partial per diem" %},
+        <code>FOPD</code> {% trans "Foreign per diem" %},
+        <code>MA</code> {% trans "Meal allowance" %},
+        <code>O</code> {% trans "Other" %}.
+    </p>
+
+    <h2 class="sub-headline" style="margin-top: 2em;">3. {% trans "Pool Rows" %}</h2>
+    <p>{% trans "Pool rows are unsubmitted expense lines owned by the authenticated user. They can later be bundled into a draft expense application from the web UI." %}</p>
+
+    <table class="pure-table pure-table-bordered" style="width: 100%;">
+        <thead><tr><th>{% trans "Method" %}</th><th>{% trans "Endpoint" %}</th><th>{% trans "Description" %}</th></tr></thead>
+        <tbody>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/pool/</code></td>
+                <td>{% trans "List the caller's pool rows, newest first." %}</td>
+            </tr>
+            <tr>
+                <td><strong>POST</strong></td>
+                <td><code>/api/v1/pool/</code></td>
+                <td>{% trans "Create a pool row." %}</td>
+            </tr>
+            <tr>
+                <td><strong>GET</strong></td>
+                <td><code>/api/v1/pool/&lt;id&gt;/</code></td>
+                <td>{% trans "Retrieve one pool row owned by the caller." %}</td>
+            </tr>
+            <tr>
+                <td><strong>PATCH</strong></td>
+                <td><code>/api/v1/pool/&lt;id&gt;/</code></td>
+                <td>{% trans "Partially update a pool row owned by the caller." %}</td>
+            </tr>
+            <tr>
+                <td><strong>PUT</strong></td>
+                <td><code>/api/v1/pool/&lt;id&gt;/</code></td>
+                <td>{% trans "Replace a pool row owned by the caller." %}</td>
+            </tr>
+            <tr>
+                <td><strong>DELETE</strong></td>
+                <td><code>/api/v1/pool/&lt;id&gt;/</code></td>
+                <td>{% trans "Delete a pool row owned by the caller." %}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>{% trans "Pool row fields" %}</h3>
+    <table class="pure-table pure-table-bordered" style="width: 100%;">
+        <thead><tr><th>{% trans "Field" %}</th><th>{% trans "Required" %}</th><th>{% trans "Notes" %}</th></tr></thead>
+        <tbody>
+            <tr><td><code>id</code></td><td>{% trans "No" %}</td><td>{% trans "Read-only." %}</td></tr>
+            <tr><td><code>description</code></td><td>{% trans "Yes" %}</td><td>{% trans "Text description of the expense row." %}</td></tr>
+            <tr><td><code>begin_at</code></td><td>{% trans "Yes" %}</td><td>{% trans "ISO 8601 datetime, for example" %} <code>2026-09-04T06:00:00Z</code>.</td></tr>
+            <tr><td><code>ended_at</code></td><td>{% trans "Conditional" %}</td><td>{% trans "Required when the selected expense type has" %} <code>requires_endtime=true</code>.</td></tr>
+            <tr><td><code>organisation</code></td><td>{% trans "Yes" %}</td><td>{% trans "Must be active and accessible to the user." %}</td></tr>
+            <tr><td><code>expensetype</code></td><td>{% trans "Yes" %}</td><td>{% trans "Must be active, accessible to the user, and belong to the same organisation." %}</td></tr>
+            <tr><td><code>accountdimension</code></td><td>{% trans "No" %}</td><td>{% trans "If supplied, it must belong to the same organisation. There is currently no API endpoint for discovering account dimensions." %}</td></tr>
+            <tr><td><code>basis</code></td><td>{% trans "Yes" %}</td><td>{% trans "Decimal amount, kilometres, days, or pieces depending on the expense type unit." %}</td></tr>
+            <tr><td><code>receipt</code></td><td>{% trans "Conditional" %}</td><td>{% trans "Required when the selected expense type has" %} <code>requires_receipt=true</code>. {% trans "Accepted file types are validated by the server." %}</td></tr>
+            <tr><td><code>expense</code></td><td>{% trans "No" %}</td><td>{% trans "Read-only. Pool rows always have" %} <code>expense=null</code>.</td></tr>
+            <tr><td><code>user</code></td><td>{% trans "No" %}</td><td>{% trans "Read-only. Set from the token owner." %}</td></tr>
+        </tbody>
+    </table>
+
+    <h3>{% trans "JSON create example" %}</h3>
+<pre><code>POST /api/v1/pool/
+Authorization: Token 0123456789abcdef...
+Content-Type: application/json
+
+{
+  "description": "Taxi from station to meeting",
+  "begin_at": "2026-09-04T12:00:00Z",
+  "expensetype": 123,
+  "basis": "25.50",
+  "organisation": 45
+}</code></pre>
+
+    <h3>{% trans "Per diem example" %}</h3>
+<pre><code>{
+  "description": "Full per diem, Tampere event",
+  "begin_at": "2026-09-04T06:00:00Z",
+  "ended_at": "2026-09-04T18:00:00Z",
+  "expensetype": 124,
+  "basis": "1",
+  "organisation": 45
+}</code></pre>
+
+    <h3>{% trans "Multipart receipt upload example" %}</h3>
+<pre><code>curl -X POST http://yhrek.docker.so/api/v1/pool/ \
+  -H "Authorization: Token 0123456789abcdef..." \
+  -F "description=Receipt upload test" \
+  -F "begin_at=2026-09-04T12:00:00Z" \
+  -F "expensetype=123" \
+  -F "basis=25.50" \
+  -F "organisation=45" \
+  -F "receipt=@receipt.pdf"</code></pre>
+
+    <h3>{% trans "Successful response" %}</h3>
+<pre><code>HTTP 201 Created
+{
+  "id": 987,
+  "description": "Receipt upload test",
+  "begin_at": "2026-09-04T12:00:00Z",
+  "ended_at": null,
+  "expensetype": 123,
+  "accountdimension": null,
+  "basis": "25.50",
+  "receipt": "uploads/receipts/receipt.pdf",
+  "expense": null,
+  "user": 5,
+  "organisation": 45
+}</code></pre>
+
+    <h2 class="sub-headline" style="margin-top: 2em;">4. {% trans "Validation and Status Codes" %}</h2>
+    <table class="pure-table pure-table-bordered" style="width: 100%;">
+        <thead><tr><th>{% trans "Status" %}</th><th>{% trans "Meaning" %}</th></tr></thead>
+        <tbody>
+            <tr><td><code>200 OK</code></td><td>{% trans "Successful list, retrieve, or update response." %}</td></tr>
+            <tr><td><code>201 Created</code></td><td>{% trans "Pool row was created." %}</td></tr>
+            <tr><td><code>204 No Content</code></td><td>{% trans "Pool row was deleted." %}</td></tr>
+            <tr><td><code>400 Bad Request</code></td><td>{% trans "Missing or invalid field, inactive organisation, mismatched organisation and expense type, missing required receipt, missing required ending time, oversized receipt, or invalid account dimension." %}</td></tr>
+            <tr><td><code>401 Unauthorized</code></td><td>{% trans "Missing or invalid token." %}</td></tr>
+            <tr><td><code>403 Forbidden</code></td><td>{% trans "The organisation or expense type is not available to the authenticated user." %}</td></tr>
+            <tr><td><code>404 Not Found</code></td><td>{% trans "The requested object does not exist or is not owned by the authenticated user." %}</td></tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

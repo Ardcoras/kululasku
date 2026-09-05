@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h1 class="middle-headline">{% trans "My Pool" %}</h1>
+
+{% if not lines %}
+<p style="text-align: center; margin-top: 2em;">{% trans "Your pool is currently empty. Upload receipts from the mobile app." %}</p>
+{% else %}
+<form method="POST" action="{% url 'expense_pool_bundle' %}" class="pure-form">
+    {% csrf_token %}
+    
+    <div style="margin: 1em; padding: 1em; background: #f9f9f9; border-radius: 5px;">
+        <label for="target_draft">{% trans "Target Draft:" %}</label>
+        <select name="target_draft" id="target_draft" style="padding: 0.5em; margin-right: 1em;">
+            <option value="new">{% trans "-- Create New Draft --" %}</option>
+            {% for draft in drafts %}
+                <option value="{{ draft.id }}">{{ draft.organisation.name }} ({% trans "Draft" %} {{ draft.created_at|date:"d.m.Y" }})</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="pure-button pure-button-primary" style="background: rgb(28, 184, 65); color: white;">
+            {% trans "Bundle Selected Receipts" %}
+        </button>
+    </div>
+
+    <table class="pure-table pure-table-horizontal" style="width: 100%; margin-top: 1em;">
+        <thead>
+            <tr>
+                <th style="width: 5%;"><input type="checkbox" id="selectAll"></th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Description" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th>{% trans "Amount" %}</th>
+                <th>{% trans "Organisation" %}</th>
+                <th>{% trans "Receipt" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in lines %}
+            <tr>
+                <td><input type="checkbox" name="lines" value="{{ line.id }}" class="pool-checkbox"></td>
+                <td>{{ line.begin_at|date:"d.m.Y" }}</td>
+                <td>{{ line.description }}</td>
+                <td>{{ line.expensetype.name|default:"-" }}</td>
+                <td>{{ line.basis|default:"0.00" }} €</td>
+                <td>{{ line.organisation.name }}</td>
+                <td>
+                    {% if line.receipt %}
+                    <a href="{% url 'receipt_fetch' expenselineid=line.id %}" target="_blank" rel="noopener noreferrer">{% trans "View" %}</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
+
+<script>
+    document.getElementById('selectAll').addEventListener('change', function(e) {
+        var checkboxes = document.querySelectorAll('.pool-checkbox');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = e.target.checked;
+        }
+    });
+</script>
+{% endif %}
+
+{% endblock %}

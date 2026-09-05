@@ -1,0 +1,20 @@
+{# Shared application detail fields for new expenses and draft editing. #}
+<div class="pure-g blue-bottom">
+  <div class="wrapper-container">
+  {% for field in form.visible_fields %}
+    <div class="pure-control-group field-{{ field.name }}{% if field.field.required %} required{% endif %}{% if field.errors %} error{% endif %}"{{ field.field.required|yesno:" parsley-required" }}>
+      {{ field.label_tag }}
+      {{ field }}
+      {{ field.errors }}
+
+      {% if field.help_text != '' %}
+        <p class="helptext">{{ field.help_text }}</p>
+      {% endif %}
+    </div>
+    {% if field.name == 'personno' %}
+      </div>
+      <div class="wrapper-container">
+    {% endif %}
+  {% endfor %}
+  </div>
+</div>
