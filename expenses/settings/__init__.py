@@ -3,7 +3,16 @@
 import os
 import sys
 import locale
+from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
+
+
+def set_finnish_locale():
+    try:
+        locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
+    except locale.Error:
+        locale.setlocale(locale.LC_ALL, '')
+
 
 PROJECT_ROOT = os.path.abspath(os.path.join(
     os.path.dirname(__file__).replace('settings', ''), ''))
@@ -14,13 +23,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 api_key = os.getenv('SENDGRID_API_KEY')
 # Python vaatii tekstin converttauksen booleaniksi toimiakseen
 DEBUG = os.getenv('DEBUG') == 'True'
-ALLOWED_HOSTS = list(os.getenv('ALLOWED_HOSTS_STRING').split(','))
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS_STRING', 'localhost').split(',') if host.strip()]
 CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS] + [f'http://{host}' for host in ALLOWED_HOSTS]
 SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY and DEBUG:
+    SECRET_KEY = 'insecure-dev-key-do-not-use-in-production'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 TEMPLATE_DEBUG = DEBUG
-locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
+set_finnish_locale()
 
 # 2.5MB - 2621440
 # 5MB - 5242880
@@ -196,7 +207,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    ]
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'api_login': '5/min',
+    },
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -270,14 +284,19 @@ else:
         }
     }
 
-SECRET_KEY=os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', SECRET_KEY)
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'insecure-dev-key-do-not-use-in-production'
+    else:
+        raise ImproperlyConfigured('SECRET_KEY must be set when DEBUG is False.')
 
 EMAIL_HOST = os.getenv('SMTP_HOST')
 EMAIL_HOST_USER = os.getenv('SMTP_USER')
 EMAIL_HOST_PASSWORD = os.getenv('SMTP_PASSWORD')
 EMAIL_PORT = os.getenv('SMTP_PORT')
 EMAIL_USE_TLS = True
-locale.setlocale(locale.LC_ALL, 'fi_FI.UTF-8')
+set_finnish_locale()
 
 #locale.setlocale(locale.LC_ALL, 'fi_FI')
 

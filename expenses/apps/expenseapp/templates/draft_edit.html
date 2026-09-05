@@ -9,18 +9,10 @@
     
     <fieldset style="background: whitesmoke; padding: 1em; border-radius: 5px; margin-bottom: 2em;">
         <legend>{% trans "Application Details" %}</legend>
-        {% for key, field in fields.items %}
-        <div class="pure-control-group">
-            <label for="id_{{ key }}">{{ field.label }}</label>
-            {% if key == 'description' %}
-                <textarea id="id_{{ key }}" name="{{ key }}" rows="4" style="width: 300px;">{{ field.value }}</textarea>
-            {% elif key == 'date' %}
-                <input type="text" id="id_{{ key }}" value="{{ field.value|date:'j.n.Y' }}" readonly>
-            {% else %}
-                <input type="text" id="id_{{ key }}" name="{{ key }}" value="{{ field.value|default:'' }}" style="width: 300px;">
-            {% endif %}
-        </div>
+        {% for hidden in details_form.hidden_fields %}
+            {{ hidden }}
         {% endfor %}
+        {% include "expense-details-fields.html" with form=details_form %}
     </fieldset>
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">
@@ -49,7 +41,7 @@
                 <td>{{ line.basis|default:"0.00" }} €</td>
                 <td>
                     {% if line.receipt %}
-                    <a href="{{ line.receipt.url }}" target="_blank">{% trans "View" %}</a>
+                    <a href="{% url 'receipt_fetch' expenselineid=line.id %}" target="_blank" rel="noopener noreferrer">{% trans "View" %}</a>
                     {% else %}
                     -
                     {% endif %}
@@ -72,7 +64,8 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3em;">
         <div>
             <!-- Added Delete Draft Action Here Instead -->
-            <button type="submit" form="delete-draft-form" class="pure-button" style="background: #dc3545; color: white; padding: 0.75em 2em; font-size: 1.2em;" onclick="return confirm('{% trans \'Are you sure you want to completely discard this draft? Its attached receipts will safely return to your pool.\' %}');">
+            {% trans "Are you sure you want to completely discard this draft? Its attached receipts will safely return to your pool." as discard_confirm_message %}
+            <button type="submit" form="delete-draft-form" class="pure-button" style="background: #dc3545; color: white; padding: 0.75em 2em; font-size: 1.2em;" onclick="return confirm('{{ discard_confirm_message|escapejs }}');">
                 <i class="icon-trash"></i> {% trans "Discard Draft" %}
             </button>
         </div>

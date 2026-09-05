@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib.admin import DateFieldListFilter
 from django.utils.translation import gettext_lazy
 from django.contrib.auth.models import Permission
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.contrib.contenttypes.models import ContentType
 from datetime import datetime, timezone
 from localflavor.generic.models import IBANField, BICField
@@ -485,7 +485,7 @@ class Expense(models.Model):
         'Eg. Names of the additional passengers, people in the meeting, cost centre or activity sector.'), blank=True, null=True)
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
     status = models.IntegerField(gettext_lazy(
-        'Status'), choices=APPLICATION_STATUSES, default=-1)
+        'Status'), choices=APPLICATION_STATUSES, default=0)
     katre_status = models.IntegerField(gettext_lazy(
         'Katre status'), choices=KATRE_STATUSES, default=0)
 
@@ -598,13 +598,27 @@ class Expense(models.Model):
       code = code + str(checksum)
       return code
 
+def remember_expense_status(sender, instance, **kwargs):
+  if instance.pk:
+    instance._previous_status = Expense.objects.filter(pk=instance.pk).values_list('status', flat=True).first()
+  else:
+    instance._previous_status = None
+
+
+def assign_expense_number(instance):
+  max_num = Expense.objects.filter(organisation=instance.organisation).exclude(num='').aggregate(Max('num'))
+  if max_num['num__max'] == '' or max_num['num__max'] == 0 or max_num['num__max'] is None:
+    max_num['num__max'] = 1000
+  instance.num = int(max_num['num__max']) + 1
+  Expense.objects.filter(pk=instance.pk).update(num=instance.num)
+
+
 def create_expense(sender, instance, created, **kwargs):
+  if instance.status == -1:
+    return
+
   if not instance.num or instance.num == '':
-    max_num = Expense.objects.filter(organisation=instance.organisation).aggregate(Max('num'))
-    if max_num['num__max'] == '' or max_num['num__max'] == 0:
-      max_num['num__max'] = 1000
-    instance.num = int(max_num['num__max']) + 1
-    instance.save()
+    assign_expense_number(instance)
 #  from django_request_local.middleware import RequestLocal
 #  current_request = RequestLocal.get_current_request()
 #  if not current_request:
@@ -613,10 +627,14 @@ def create_expense(sender, instance, created, **kwargs):
     e = ExpenseEvent(expense=instance, type='R', notes=u'Järjestelmä')
 #    e.user = current_request.user
     e.save()
+  elif getattr(instance, '_previous_status', None) == -1:
+    e = ExpenseEvent(expense=instance, type='R', notes=u'Created from pre-submitted entries')
+    e.save()
   else:
     e = ExpenseEvent(expense=instance, type='E')
 #    e.user = current_request.user
     e.save()
+pre_save.connect(remember_expense_status, sender=Expense)
 post_save.connect(create_expense, sender=Expense)
 
 def receipt_path(path, filename):

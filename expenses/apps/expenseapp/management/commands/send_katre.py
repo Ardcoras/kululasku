@@ -1,10 +1,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from expenseapp.models import Expense, ExpenseLine
 import os
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from django.conf import settings
 from django.core.mail import mail_admins
-from django.utils import timezone
 import paramiko
 import io
 
@@ -17,6 +16,7 @@ class Command (BaseCommand):
 
         expenses = Expense.objects.filter(
             katre_status=0,
+            status__gte=0,
             organisation__send_active=1,
             created_at__gte=datetime(2020, 1, 1, tzinfo=timezone.utc),
             created_at__lte=datetime(

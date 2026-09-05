@@ -1,0 +1,4 @@
+# Normalise all text files to LF on commit.
+# This fixes the CRLF issue in inline_snippet.py and prevents
+# future mixed line-ending problems across platforms.
+* text=auto eol=lf

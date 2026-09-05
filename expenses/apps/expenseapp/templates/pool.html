@@ -46,7 +46,7 @@
                 <td>{{ line.organisation.name }}</td>
                 <td>
                     {% if line.receipt %}
-                    <a href="{{ line.receipt.url }}" target="_blank">{% trans "View" %}</a>
+                    <a href="{% url 'receipt_fetch' expenselineid=line.id %}" target="_blank" rel="noopener noreferrer">{% trans "View" %}</a>
                     {% else %}
                     -
                     {% endif %}

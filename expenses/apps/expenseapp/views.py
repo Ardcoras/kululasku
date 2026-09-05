@@ -1,9 +1,10 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, HttpResponseRedirect
-from .forms import ExpenseForm, PersonForm, OrganisationForm
+from django.http import Http404, HttpResponse, HttpResponseRedirect
+from .forms import ExpenseForm, ExpenseDraftForm, PersonForm, OrganisationForm
 from .models import Expense, ExpenseLine, ExpenseType, InfoMessage, Organisation, Person, Workflow, WorkflowStep, ExpenseEvent, TYPE_CHOICES
 from django.contrib.auth.decorators import login_required, permission_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from collections import OrderedDict
@@ -14,9 +15,33 @@ from os.path import basename
 from django.utils.encoding import smart_str
 from expenseapp.helpers import cc_expense
 from datetime import datetime
+from django.db import transaction
 from .helpers import decimal_in_r82, render_to_pdf
 from decimal import Decimal
 from django.utils import translation
+
+
+def user_display_name(user):
+    person = getattr(user, 'person', None)
+    if person:
+        name = person.name().strip()
+        if name:
+            return name
+    return user.get_full_name().strip() or user.username
+
+
+def draft_initial_data(expense, user):
+    person = getattr(user, 'person', None)
+    return {
+        'name': expense.name.strip() if expense.name and expense.name.strip() else user_display_name(user),
+        'email': expense.email or user.email,
+        'phone': expense.phone or (person.phone if person else ''),
+        'address': expense.address or (person.address if person else ''),
+        'iban': expense.iban or (person.iban if person else ''),
+        'swift_bic': expense.swift_bic or (person.swift_bic if person else ''),
+        'personno': expense.personno or (person.personno if person else ''),
+        'description': expense.description,
+    }
 
 
 def language_activate(request, lang):
@@ -36,8 +61,20 @@ def language_activate(request, lang):
 
 @login_required()
 def receipt_fetch(request, expenselineid):
-    expenseline = get_object_or_404(ExpenseLine, pk=expenselineid)
-    if not (expenseline.expense.user == request.user or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expenseline.expense.workflow, users=request.user)):
+    expenseline = get_object_or_404(ExpenseLine.objects.select_related('expense', 'user'), pk=expenselineid)
+    if not expenseline.receipt:
+        raise Http404
+
+    if expenseline.expense_id:
+        allowed = (
+            expenseline.expense.user == request.user
+            or request.user.has_perm('expenseapp.change_expense')
+            or WorkflowStep.objects.filter(workflow=expenseline.expense.workflow, users=request.user).exists()
+        )
+    else:
+        allowed = expenseline.user == request.user or request.user.has_perm('expenseapp.change_expense')
+
+    if not allowed:
         return redirect('/accounts/login/?next=%s' % request.path)
 
     response = HttpResponse()
@@ -78,7 +115,7 @@ def organisationselection(request):
 
 @login_required()
 def pool_view(request):
-    lines = ExpenseLine.objects.filter(user=request.user, expense__isnull=True).order_by('-created_at')
+    lines = ExpenseLine.objects.filter(user=request.user, expense__isnull=True).order_by('-id')
     drafts = Expense.objects.filter(user=request.user, status=-1).order_by('-created_at')
     
     return render(request, 'pool.html', {
@@ -88,23 +125,27 @@ def pool_view(request):
     })
 
 @login_required()
+@require_POST
 def pool_bundle_view(request):
-    if request.method == 'POST':
-        line_ids = request.POST.getlist('lines')
-        target_draft_id = request.POST.get('target_draft')
-        
-        lines = ExpenseLine.objects.filter(id__in=line_ids, user=request.user, expense__isnull=True)
-        if not lines.exists():
+    line_ids = request.POST.getlist('lines')
+    target_draft_id = request.POST.get('target_draft')
+
+    with transaction.atomic():
+        lines_qs = ExpenseLine.objects.select_for_update().filter(
+            id__in=line_ids,
+            user=request.user,
+            expense__isnull=True,
+        )
+        lines = list(lines_qs)
+        if not lines:
             messages.error(request, _('No valid receipts selected.'))
             return redirect('expense_pool')
-            
-        # Ensure all lines belong to the same organisation
-        org_id = lines.first().organisation_id
-        for line in lines:
-            if line.organisation_id != org_id:
-                messages.error(request, _('All bundled receipts must belong to the same organisation.'))
-                return redirect('expense_pool')
-                
+
+        org_id = lines[0].organisation_id
+        if any(line.organisation_id != org_id for line in lines):
+            messages.error(request, _('All bundled receipts must belong to the same organisation.'))
+            return redirect('expense_pool')
+
         if target_draft_id == 'new':
             workflow = Workflow.objects.filter(organisation_id=org_id).first()
             if not workflow:
@@ -116,77 +157,83 @@ def pool_bundle_view(request):
                 organisation_id=org_id,
                 workflow=workflow,
                 status=-1,
-                name=request.user.person.name() if hasattr(request.user, 'person') else '',
+                name=user_display_name(request.user),
                 email=request.user.email,
             )
         else:
-            expense = get_object_or_404(Expense, id=target_draft_id, user=request.user, status=-1)
+            expense = get_object_or_404(
+                Expense.objects.select_for_update(),
+                id=target_draft_id,
+                user=request.user,
+                status=-1,
+            )
             if expense.organisation_id != org_id:
                 messages.error(request, _('The selected draft organisation does not match the receipts.'))
                 return redirect('expense_pool')
-                
-        lines.update(expense=expense)
-        messages.success(request, _('Receipts successfully moved to draft.'))
-        return redirect('expense_draft_edit', expense_id=expense.id)
-    return redirect('expense_pool')
+
+        ExpenseLine.objects.filter(id__in=[line.id for line in lines], expense__isnull=True).update(expense=expense)
+
+    messages.success(request, _('Receipts successfully moved to draft.'))
+    return redirect('expense_draft_edit', expense_id=expense.id)
 
 @login_required()
+@require_POST
 def expense_draft_delete_view(request, expense_id):
-    if request.method == 'POST':
-        expense = get_object_or_404(Expense, id=expense_id, user=request.user, status=-1)
-        ExpenseLine.objects.filter(expense=expense).update(expense=None)
-        expense.delete()
-        messages.success(request, _('Draft discarded. Receipts have returned to your pool.'))
-        return redirect('expense_new')
+    expense = get_object_or_404(Expense, id=expense_id, user=request.user, status=-1)
+    ExpenseLine.objects.filter(expense=expense).update(expense=None)
+    expense.delete()
+    messages.success(request, _('Draft discarded. Receipts have returned to your pool.'))
     return redirect('expense_new')
 
 @login_required()
 def expense_draft_edit(request, expense_id):
     expense = get_object_or_404(Expense, id=expense_id, user=request.user, status=-1)
     organisation = expense.organisation
+    initial = draft_initial_data(expense, request.user)
+    details_form = ExpenseDraftForm(
+        request.POST or None,
+        instance=expense,
+        initial=initial,
+        organisation=organisation,
+    )
     
     # Option B: Add From Pool Action
     if request.method == 'POST' and 'add_pool_lines' in request.POST:
         line_ids = request.POST.getlist('lines')
-        ExpenseLine.objects.filter(id__in=line_ids, user=request.user, expense__isnull=True, organisation=organisation).update(expense=expense)
+        with transaction.atomic():
+            lines = list(ExpenseLine.objects.select_for_update().filter(
+                id__in=line_ids,
+                user=request.user,
+                expense__isnull=True,
+                organisation=organisation,
+            ))
+            ExpenseLine.objects.filter(id__in=[line.id for line in lines], expense__isnull=True).update(expense=expense)
         messages.success(request, _('Lines added from pool.'))
         return redirect('expense_draft_edit', expense_id=expense.id)
         
     # Submission Action (Lock the draft to Active)
     if request.method == 'POST' and 'submit_draft' in request.POST:
-        # We process the final fields from the user before locking
-        expense.name = request.POST.get('name', expense.name)
-        expense.email = request.POST.get('email', expense.email)
-        expense.phone = request.POST.get('phone', expense.phone)
-        expense.iban = request.POST.get('iban', expense.iban)
-        expense.swift_bic = request.POST.get('swift_bic', expense.swift_bic)
-        expense.description = request.POST.get('description', expense.description)
-        expense.status = 0
-        expense.save()
-        
-        # Trigger workflow notification similar to production pipeline
-        cc_expense(expense)
-        messages.success(request, _('Application submitted successfully.'))
-        return redirect('expense_view', expense_id=expense.id)
+        if not expense.expenseline_set.exists():
+            messages.error(request, _('Please add at least one receipt line before submitting.'))
+            return redirect('expense_draft_edit', expense_id=expense.id)
 
-    # Initial loading of the form fields to display
-    fields = OrderedDict()
-    fields['name'] = {'label': _('Applicant Name'), 'value': expense.name or request.user.person.name()}
-    fields['email'] = {'label': _('Email'), 'value': expense.email or request.user.email}
-    fields['phone'] = {'label': _('Phone'), 'value': expense.phone or request.user.person.phone}
-    fields['address'] = {'label': _('Address'), 'value': expense.address or request.user.person.address}
-    fields['iban'] = {'label': _('Bank account no'), 'value': expense.iban or request.user.person.iban}
-    fields['swift_bic'] = {'label': _('BIC no'), 'value': expense.swift_bic or request.user.person.swift_bic}
-    fields['personno'] = {'label': _('Person number'), 'value': expense.personno or request.user.person.personno}
-    fields['description'] = {'label': _('Description'), 'value': expense.description}
-    fields['date'] = {'label': _('Sent'), 'value': datetime.now()}
+        if details_form.is_valid():
+            expense = details_form.save(commit=False)
+            expense.status = 0
+            with transaction.atomic():
+                expense.save()
+                _expense = expense
+                transaction.on_commit(lambda e=_expense: cc_expense(e))
+
+            messages.success(request, _('Application submitted successfully.'))
+            return redirect('expense_view', expense_id=expense.id)
     
-    pool_lines = ExpenseLine.objects.filter(user=request.user, expense__isnull=True, organisation=organisation).order_by('-created_at')
+    pool_lines = ExpenseLine.objects.filter(user=request.user, expense__isnull=True, organisation=organisation).order_by('-id')
 
     return render(request, 'draft_edit.html', {
         'page_title': _('Editing Draft'),
         'expense': expense,
-        'fields': fields,
+        'details_form': details_form,
         'lines': expense.expenseline_set.all(),
         'pool_lines': pool_lines,
         'total_sum': sum([l.sum() for l in expense.expenseline_set.all()])
@@ -373,12 +420,6 @@ def expense(request, organisation_id):
     # time.sleep(5)
     if expense_form.is_valid():
         expense = expense_form.save()
-        
-        # Safely pivot the Expense back into 'Open' (0) status routing so it doesn't get stuck in the Draft (-1) state forever
-        if expense.status == -1:
-            expense.status = 0
-            expense.save(update_fields=['status'])
-        
         # Send the email
         cc_expense(expense)
         messages.success(request, _('Expense information saved.'))
@@ -399,7 +440,8 @@ def expense(request, organisation_id):
 def showexpense(request, expense_id):
     expense = get_object_or_404(Expense, pk=expense_id)
 
-    if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
+    workflow_user_allowed = expense.status != -1 and WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user).exists()
+    if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or workflow_user_allowed):
         return redirect('/accounts/login/?next=%s' % request.path)
 
     fields = OrderedDict()
@@ -522,7 +564,7 @@ def expense_list(request):
     workflows = []
     for wfstep in workflowsteps:
       workflows.append(wfstep.workflow)
-    expenses = Expense.objects.filter(workflow__in=workflows)
+    expenses = Expense.objects.filter(workflow__in=workflows, status__gte=0)
 
   return render(request, 'expense_list.html', {
     'expenses': expenses,
@@ -531,7 +573,10 @@ def expense_list(request):
 @login_required
 def expense_addstep(request, expense_id):
   expense = get_object_or_404(Expense, id=expense_id)
-  if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
+  workflow_user_allowed = expense.status != -1 and WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user).exists()
+  if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or workflow_user_allowed):
+    return redirect('/accounts/login/?next=%s' % request.path)
+  if expense.status == -1 and not request.user.has_perm('expenseapp.change_expense'):
     return redirect('/accounts/login/?next=%s' % request.path)
 
   wfsteps = WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)
@@ -566,7 +611,7 @@ def expense_actable_list(request):
   a_expenses = deque()
 
   for wfstep in workflowsteps:
-    expenses = Expense.objects.filter(workflow=wfstep.workflow)
+    expenses = Expense.objects.filter(workflow=wfstep.workflow, status__gte=0)
     for expense in expenses:
       eevent = ExpenseEvent.objects.filter(expense=expense, type=wfstep.type)
       if not eevent:
@@ -579,7 +624,8 @@ def expense_actable_list(request):
 @login_required
 def expense_view_pdf(request, expense_id):
   expense = get_object_or_404(Expense, id=expense_id)
-  if not (request.user == expense.user_id or request.user.has_perm('expenseapp.change_expense') or WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user)):
+  workflow_user_allowed = expense.status != -1 and WorkflowStep.objects.filter(workflow=expense.workflow, users=request.user).exists()
+  if not (request.user == expense.user or request.user.has_perm('expenseapp.change_expense') or workflow_user_allowed):
     return redirect('/accounts/login/?next=%s' % request.path)
 
   lines = ExpenseLine.objects.filter(expense=expense)
@@ -608,7 +654,7 @@ def organisationedit(request, organisation_id):
 
     years = []
     years_raw = Expense.objects.filter(
-        organisation=organisation).datetimes('created_at', 'year')
+        organisation=organisation, status__gte=0).datetimes('created_at', 'year')
     for year in years_raw:
         years.append(year.strftime('%Y'))
 
@@ -635,7 +681,7 @@ def annualarchive(request, organisation_id, year):
     return redirect('/login/?next=%s' % request.path)
 
   organisation = get_object_or_404(Organisation, pk=organisation_id)
-  expenses = Expense.objects.filter(organisation=organisation, created_at__year=year).order_by('personno')
+  expenses = Expense.objects.filter(organisation=organisation, created_at__year=year, status__gte=0).order_by('personno')
 
   return render(request, 'expense_list.html', {
     'expenses': expenses,
@@ -654,7 +700,7 @@ def annualreport(request, organisation_id, year):
 
     organisation = get_object_or_404(Organisation, pk=organisation_id)
     expenses = Expense.objects.filter(
-        organisation=organisation, created_at__year=year).order_by('personno')
+        organisation=organisation, created_at__year=year, status__gte=0).order_by('personno')
 
     persons = {}
 

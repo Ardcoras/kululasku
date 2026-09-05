@@ -58,12 +58,13 @@ Yhrek.fi
 import io, os
 from django.http import HttpResponse
 import PyPDF2
-from weasyprint import HTML
 from django.template.loader import render_to_string
 from PIL import Image
 import tempfile
 
 def render_to_pdf(template_src, context_dict, additional=[]):
+  from weasyprint import HTML
+
   html_string = render_to_string(template_src, context_dict)
 
   html = HTML(string=html_string)

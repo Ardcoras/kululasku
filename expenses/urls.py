@@ -2,7 +2,7 @@ from django.urls import include, path
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 from expenseapp import views
 from django.contrib.flatpages import views as flatviews
 
@@ -10,6 +10,7 @@ admin.site.site_header = 'Kululasku palvelun ylläpito'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1', RedirectView.as_view(url='/api/v1/', permanent=False)),
     path('api/v1/', include('expenseapp.api.urls')),
     path('api/docs/', login_required(TemplateView.as_view(template_name="api_docs.html")), name='api_docs'),
     path('personinfo/', views.personinfo, name='personinfo'),

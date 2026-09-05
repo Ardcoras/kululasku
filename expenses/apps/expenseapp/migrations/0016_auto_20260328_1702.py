@@ -11,7 +11,11 @@ def copy_expense_owners_to_lines(apps, schema_editor):
             line.user_id = line.expense.user_id
             line.organisation_id = line.expense.organisation_id
             lines_to_update.append(line)
-            
+
+        if len(lines_to_update) >= 1000:
+            ExpenseLine.objects.bulk_update(lines_to_update, ['user_id', 'organisation_id'], batch_size=1000)
+            lines_to_update = []
+
     if lines_to_update:
         ExpenseLine.objects.bulk_update(lines_to_update, ['user_id', 'organisation_id'], batch_size=1000)
 

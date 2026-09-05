@@ -17,25 +17,7 @@
   {% endfor %}
   
   {# Include the visible fields #}
-  <div class="pure-g blue-bottom">
-    <div class="wrapper-container">
-    {% for field in exp_form.visible_fields %}
-      <div class="pure-control-group{% if field.field.required %} required{% endif %}{% if field.errors %} error{% endif %}"{{ field.field.required|yesno:" parsley-required" }}>
-        {{ field.label_tag }}
-        {{ field }}
-        {{ field.errors }}
-
-        {% if field.help_text != '' %}
-          <p class="helptext">{{ field.help_text }}</p>
-        {% endif %}
-      </div>
-      {% if field.html_name == 'expenseform-personno' %}
-        </div>
-        <div class="wrapper-container">
-      {% endif %}
-    {% endfor %}
-    </div>
-  </div>
+  {% include "expense-details-fields.html" with form=exp_form %}
   
   {# Inline formsets #}
   {{ exp_form.inlineformsets.expenselines.management_form }}
